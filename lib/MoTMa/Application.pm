@@ -52,7 +52,46 @@ our $cfg =  new Config::IniFiles ( -file => $basePath."conf/motma.ini" );
 our $createTemplate =  $basePath.$cfg->val('BMC', 'createTpl', '-');
 # removing white spaces
 $createTemplate =~s/\s+$//;
-our $dbDsn = "DBI:".$cfg->val('database', 'driver', "SQLite").":dbname=".$basePath.$cfg->val('database', 'database', "data/data.db");
+my $dbDriver = $cfg->val('database', 'driver', "SQLite");
+if ($dbDriver eq "SQLite") {
+    our $dbDsn = "DBI:SQLite:dbname=".
+        $basePath.$cfg->val('database', 'database', "data/data.db");
+}
+elsif ($dbDriver eq "Pg") {
+    our $dbDsn = "DBI:Pg:dbname=".$cfg->val('database', 'database', "helpdesk").
+        ";host=".$cfg->val('host', 'host', "localhost").";port=5432";
+}
 our $dbUser = $cfg->val('database', 'user', "");
 our $dbPassword = $cfg->val('database', 'password', "");
+our $debug = $cfg->val('global', 'debug', '0');
+our $correlation = $cfg->val('global', 'correlation', 'host;service');
+
+our $monitoringDriver = $cfg->val('global', 'monitoringdriver', 'NAGIOS');
+our $monitoringEnv = $cfg->val($monitoringDriver, 'env');
+our $monitoringStatusPage = $cfg->val($monitoringDriver, 'statusPage');
+
+our $ticketDriver = $cfg->val('global', 'ticketdriver', 'BMC');
+our $ticketUser = $cfg->val($ticketDriver, 'user', '');
+our $ticketPassword = $cfg->val($ticketDriver, 'password', '');
+our $closedRemedyState = $cfg->val($ticketDriver, 'closedState', 'Resolved');
+
+our $createProxy = $cfg->val($ticketDriver, 'createProxy', '');
+our $createUri = $cfg->val($ticketDriver, 'createUri', '');
+our $createAction = $cfg->val($ticketDriver, 'createAction', '');
+
+our $getProxy = $cfg->val($ticketDriver, 'getProxy', '');
+our $getUri = $cfg->val($ticketDriver, 'getUri', '');
+our $getAction = $cfg->val($ticketDriver, 'getAction', '');
+
+our $updateProxy = $cfg->val($ticketDriver, 'updateProxy', '');
+our $updateUri = $cfg->val($ticketDriver, 'updateUri', '');
+our $updateAction = $cfg->val($ticketDriver, 'updateAction', '');
+
+our $instanceName = $cfg->val($ticketDriver, 'instanceName', '');
+our $ticketTemplate = $cfg->val($ticketDriver, 'ticketTemplate', '');
+our $updateTicket = $cfg->val($ticketDriver, 'updateTicket', '0');
+our $autoClose = $cfg->val($ticketDriver, 'autoClose', '0');
+    
+our $closedHelpdeskState = "CLOSED";
+
 our $VERSION = '0.1';

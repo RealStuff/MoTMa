@@ -41,6 +41,7 @@ BEGIN {
 
 use lib $basePath.'lib/';
 
+use DateTime;
 use strict;
 use warnings;
 use Data::Dumper;
@@ -51,7 +52,9 @@ use HelpDesk;
 use POSIX qw/strftime/;
 
 my $VERSION = $MoTMa::Application::VERSION;
+my $debug = $MoTMa::Application::debug;
 my ( $host, $service, $submitdate, $message, $status, $priority, $category, $parameters, $versions, $help, $man );
+
 $service = "";
 $man = 0;
 $help = 0;
@@ -64,15 +67,83 @@ main();
 ###############################################################
 sub main {
 	options();
+    
+    
+    
+    # Log data to file:
+    logfile("Host: $host, Service: $service, Category: $category, Parameters: $parameters, Priority: $priority, "
+        ."Message: $message, Status: $status, Submitdate: $submitdate") if $debug;
 	
 	# Prepare Database Connections
     if (!$submitdate) {
         $submitdate = strftime( '%Y-%m-%d %H:%M:%S', localtime );
     }
+    
+    # Check if submited values in spec
+    checkValues();
 
     my $helpDesk = new HelpDesk();
-  
+    
     $helpDesk->insertEvent($host, $service, $category, $parameters, $priority, $message, $status, $submitdate);
+}
+
+###############################################################
+# Check parameters if their content is valid                  #
+###############################################################
+sub checkValues() {
+    # Check for allowed status
+    if (not($status =~/^OK$|^UP$|^CRITICAL$|^DOWN$|^WANRING$|^UNKNOWN$|^PENDING$/)) {
+        logfile("!!!!!! Notification not successful - Unknown Status: '$status' !!!!!!") if $debug;
+        usage();
+    }
+    
+    # get Nagios Environment vars
+    my @envVar = split(/;/, $MoTMa::Application::monitoringEnv);
+    # print "Motma:".$MoTMa::Application::monitoringEnv;
+    # print Dumper @envVar;
+    
+    my %monitoringEnv = map { $_ => 1 } @envVar;
+    # print "< MonitoringEvn:" . Dumper(%monitoringEnv) . ">";
+    foreach (sort keys %ENV) {
+        # if ($_ =~ /^NAGIOS_/) {
+        #     # logfile($_."\n");
+        #     logfile($_);
+        #     # $_ =~ s/NAGIOS_//g;
+        #     # logfile($_.$monitoringEnv{$_});
+        #     # logfile("MonitoringEnv: ".$monitoringEnv{$_}."::".$_);
+        #     # logfile("NAGIOS_".$_);
+            if (exists $monitoringEnv{$_}) {
+                $parameters .= "$_=$ENV{$_};";
+                logfile("Saved");
+            }
+        # }
+    }
+    # Remove trailing ';'
+    $parameters =~ s/;$//;
+    
+    # Check if submitdate is unixtimestamp
+    my $dt;
+    if (($submitdate =~ m/\d{10}/) ) {
+        $dt = DateTime->from_epoch(epoch => $submitdate)->set_time_zone(DateTime::TimeZone::Local->TimeZone());
+        $submitdate = $dt->ymd.' '.$dt->hms;
+    }
+    # check if submitdate is correct date timestamp 
+    elsif (not($submitdate =~ m/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/)) {
+        logfile("!!!!!! Notification not successful - Wrong submitdate: '$submitdate' !!!!!!") if $debug;
+        usage();
+    }
+}
+
+###############################################################
+# Log Message to log File                                     #
+###############################################################
+sub logfile() {
+    my $logMessage = shift;
+    
+    my $filename = '/opt/motma/var/log/notifications.log';
+    open(my $fh, '>>', $filename) or die "Could not open file '$filename' $!";
+    print $fh "$logMessage\n";
+    close $fh;
 }
 
 ###############################################################
@@ -176,7 +247,7 @@ This scripts saves events from your monitoring into a database.
      Timestamp the event occurs
      
  -S status
-     Monitoringstatus of the event
+     Monitoringstatus of the event (UP, DOWN, OK, CRITICAL, UNKNOWN, PENDING, WARNING)
 
 =head1 OPTIONS
 

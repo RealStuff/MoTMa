@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+# motma This starts and stops MoTMA
+#
+# chkconfig: 2345 12 88
+# description: MoTMa is the Monitoring Ticketing Manager
+# processname: motma
+# pidfile: /opt/motma/var/run/motma.pid
+### BEGIN INIT INFO
+# Provides: $motma
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+binary="/opt/motma/bin/runLin.pl"
+prog=motma
+
+[ -x $binary ] || exit 0
+
+RETVAL=0
+
+start() {
+    echo -n "Starting MoTMa: "
+    daemon $binary start
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n "Shutting down MoTMa: "
+    $binary stop
+    RETVAL=$?
+    echo
+    if [ $RETVAL -eq 0 ]; then
+        rm -f /var/run/motma.pid
+        success
+    else
+        failure
+    fi
+    return
+}
+
+status() {
+    echo -n "Status of MoTMa: "
+    STATUS=$($binary status)
+    if echo $STATUS | grep -e  'Running:.*yes' > /dev/null;
+    then
+        echo "MoTMa is running"
+        exit 0
+    elif echo $STATUS | grep -e  'Running:.*no' > /dev/null;
+    then
+        echo "MoTMa is not running"
+        exit 3
+    else
+        echo -n "MoTma status is unknown"
+        exit 4
+    fi
+}
+
+restart() {
+    echo -n "Restarting MoTMa: "
+    stop
+    sleep 2
+    start
+}
+
+case "$1" in
+    start)
+        start
+    ;;
+    stop)
+        stop
+    ;;
+    status)
+        status motma
+    ;;
+    restart)
+        restart
+    ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+    ;;
+esac
+
+exit 0

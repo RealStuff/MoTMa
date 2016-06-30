@@ -6,6 +6,7 @@ use DBI;
 use Config::IniFiles;
 use Data::Dumper;
 use MoTMa::Application;
+use POSIX qw/strftime/;
 
 require Exporter;
 
@@ -28,7 +29,7 @@ our @EXPORT = qw(
 	
 );
 
-our $VERSION = '0.01';
+our $VERSION = $MoTMa::Application::VERSION;
 
 our ($driver, $database, $table, $dsn, $user, $password, $dbh, $sth);
 
@@ -37,8 +38,8 @@ sub new {
     my $class = shift;
     my $self = {};
 
-    $dbh = DBI->connect( $MoTMa::Application::dbDsn, $MoTMa::Application::dbUser, $MoTMa::Application::dbPassword, { RaiseError => 1 })
-                      or die $DBI::errstr;
+    $dbh = DBI->connect( $MoTMa::Application::dbDsn, $MoTMa::Application::dbUser, $MoTMa::Application::dbPassword, {
+        RaiseError => 1 }) or die $DBI::errstr;
                       
     bless $self, $class;
     return $self;
@@ -77,6 +78,7 @@ Your Parameters are:
     service
     category
     parameters
+    priority
     message
     monitoringstatus
     created
@@ -89,7 +91,7 @@ sub insertEvent {
 	my $category            = shift || '';
 	my $parameters          = shift || '';
 	my $priority            = shift || '';
-	my $message             = shift || '';
+	my $message             = shift;
 	my $monitoringstatus    = shift;
     my $created             = shift || strftime( '%Y-%m-%d %H:%M:%S', localtime );
 	
@@ -108,6 +110,26 @@ sub insertEvent {
     else {
         $sth->finish();
         return 1;
+    }
+}
+
+sub getNewEvents {
+    my @row;
+    my $query = "SELECT * FROM events WHERE fk_idtickets ISNULL ORDER BY created;";
+    eval {
+        $sth = $dbh->prepare($query);
+        $sth->execute();
+    };
+    if ($@) {
+        $sth->finish();
+        print "FEHLER ".Dumper($@);
+        return 0;
+    }
+    else {
+        my $events = $sth->fetchall_hashref('idevents');
+    	
+        $sth->finish();
+        return $events;
     }
 }
 
@@ -138,14 +160,11 @@ sub getEventByObject {
     }
 }
 
-sub getEventByTicketState {
-    my $self = shift;
-    my $ticketState = shift;
+sub getTicketsByTicketState {
+    my $self                = shift;
+    my $ticketState         = shift || '';
     
-    my @row;
-    my $second = 0;
-    
-    my $query = "SELECT * FROM helpdesk WHERE ticketstatus = ?";
+    my $query = "SELECT * FROM tickets JOIN events on idtickets = fk_idtickets WHERE ticketstatus = ? ORDER BY tickets.created";
 
     eval {
         $sth = $dbh->prepare($query);
@@ -157,18 +176,79 @@ sub getEventByTicketState {
         return 0;
     }
     else {
-        while ( @row = $sth->fetchrow_array ) {
-            print "Row: ".Dumper(@row);
-        }
+        my $tickets = $sth->fetchall_hashref('idtickets');
         
         $sth->finish();
-        return 1;
+        return $tickets;
+    }
+}
+
+sub getLastEventFromTicket {
+    my $self            = shift;
+    my $idticket        = shift;
+
+    my $query = "SELECT * FROM tickets JOIN events on idtickets = fk_idtickets WHERE idtickets = ? ORDER BY idevents DESC LIMIT 1";
+
+    eval {
+        $sth = $dbh->prepare($query);
+        $sth->execute($idticket);
+    };
+    if ($@) {
+        $sth->finish();
+        print "FEHLER ".Dumper($@);
+        return 0;
+    }
+    else {
+        my $tickets = $sth->fetchall_hashref('idevents');
+        
+        $sth->finish();
+        return $tickets;
+    }
+}
+
+=item updateTicket()
+Beschreibung
+
+Your Parameters are:
+    idevent
+    newEvents
+
+=cut
+sub updateTicket {
+    my $self                = shift;
+    my $idticket            = shift || 0;
+    my $ticketnumber        = shift;
+    my $ticketstatus        = shift;
+    
+    # Update Event with ticketid
+    if ($idticket > 0) {
+        my $update = "UPDATE tickets SET ticketnumber = ?, ticketstatus = ?, modified = ? WHERE idtickets = ?";
+        
+        eval {
+            $sth = $dbh->prepare($update);
+            $sth->execute($ticketnumber, $ticketstatus, strftime( '%Y-%m-%d %H:%M:%S', localtime ), $idticket);
+        };
+        if ($@) {
+            $sth->finish();
+            print "FEHLER ".Dumper($@);
+            return 0;
+        }
+        else {
+            $sth->finish();
+            return 1;
+        }
+        
+        print "Ticket updated\n";
+    }
+    else {
+        print "Wir haben 0 als ticketid????\n";
+        return 0;
     }
 }
 
 sub getEventByExcludedTicketState {
     my $self = shift;
-    my $excludedState = shift;
+    my $excludedState       = shift;
     
     my @row;
     my $second = 0;
@@ -198,6 +278,138 @@ sub getEventByExcludedTicketState {
         
         $sth->finish();
         return 1;
+    }
+}
+
+=item insertTicket()
+Insert an Ticket into the database
+
+Your Parameters are:
+    ticketnumber
+    ticketstatus
+    created
+    modified
+
+=cut
+sub insertTicket {
+	my $self                = shift;
+	my $ticketnumber        = shift || '';
+	my $ticketStatus        = shift || '';
+	my $created             = shift || strftime( '%Y-%m-%d %H:%M:%S', localtime );
+	my $modified            = shift || undef;
+	
+	my $sth;
+    my $lastId;
+    my $lastId2;
+	
+    my $insert = "INSERT INTO tickets (ticketnumber, ticketstatus, created, modified)
+        VALUES (?,?,?,?);";
+    eval {
+        $sth = $dbh->prepare($insert);
+        # print "TRACE: $ticketnumber, $ticketStatus, $created, $modified\n";
+        $sth->execute($ticketnumber, $ticketStatus, $created, $modified);
+        # GIBT LEIDER NICH IMMER KORREKTE WERTE
+        # PostgreSQL: SELECT currval(pg_get_serial_sequence('tickets','idtickets'));
+        $lastId = $dbh->last_insert_id(undef, undef, 'tickets', 'idtickets');
+        $lastId2 = $dbh->selectrow_array("SELECT currval(pg_get_serial_sequence('tickets','idtickets'));");
+        print "Old: $lastId, New:$lastId2\n" if ($lastId ne $lastId2);
+    };
+    if ($@) {
+        $sth->finish();
+        return 0;
+    }
+    else {
+        $sth->finish();
+        return $lastId;
+    }
+}
+
+=item createTicket()
+Check if there is already a ticket for the event. If not create a Ticket else add the event to the existing ticket.
+The event is correlated as defined in configuratoin
+
+Your Parameters are:
+    idevent
+    newEvents
+=cut
+sub createTicket {
+    my $self                = shift;
+    my $idevent             = shift;
+    my $newEvents           = shift;
+    my $idticket            = 0;
+    my $itsmTicket          = 0;
+    my $updateTicket        = 0;
+    
+    # Get all related events.
+    my $query = "SELECT * FROM events JOIN tickets on fk_idtickets = idtickets WHERE  ticketstatus <> ?";
+    # Add resolved Ticketstate to query params
+    my @queryParam = ($MoTMa::Application::closedHelpdeskState);
+    # Add Correlation to query params
+    foreach (split(/;/, $MoTMa::Application::correlation)){
+        if (exists $newEvents->{$idevent}{$_}) {
+            $query .= " AND $_ = ?";
+            push(@queryParam, $newEvents->{$idevent}{$_});
+        }
+    }
+    
+    # Run Query
+    eval {
+        # print "Query: ".$query."\nParameters: ".Dumper(@queryParam)."\n";
+        $sth = $dbh->prepare($query);
+        $sth->execute(@queryParam);
+    };
+    if ($@) {
+        # Not able to run query
+        $sth->finish();
+        return (0,0);
+    }
+    else {
+        my $rsEvents = $sth->fetchall_hashref('idevents');
+        # Check if we have already tickets for this event (correlated)
+        if (keys %$rsEvents > 0) {
+            foreach my $ideventHasTicket (keys %$rsEvents) {
+                # Check if we have already a ticket für this correlated events
+                if ($idticket == 0 || $idticket == $rsEvents->{$ideventHasTicket}{fk_idtickets}) {
+                    # We found the Ticket so keep idticket
+                    $idticket = $rsEvents->{$ideventHasTicket}{fk_idtickets};
+                    $itsmTicket = $rsEvents->{$ideventHasTicket}{ticketnumber};
+                    print "TRACE: We have already a Ticket, so adding this event to ticket <$idticket>!\n";
+                    $updateTicket = 1;
+                }
+                else {
+                    # This should not happen
+                    print "ERROR: fk_idtickets are different - you have two open Tickets for this consolidation!\n";
+                }
+            }
+        }
+        else {
+            # New Ticket - insert new 
+            $idticket = $self->insertTicket('', 'NEW', undef, undef);
+        }
+        $sth->finish();
+    }
+    
+    # Update Event with ticketid
+    if ($idticket > 0) {
+        my $update = "UPDATE events SET fk_idtickets = ? WHERE idevents = ?";
+        eval {
+            $sth = $dbh->prepare($update);
+            $sth->execute($idticket, $idevent);
+        };
+        if ($@) {
+            # Update not successfully
+            $sth->finish();
+            return (0, 0, $updateTicket);
+        }
+        else {
+            $sth->finish();
+            # Event is added to Ticket.
+            return ($idticket, $itsmTicket, $updateTicket);
+        }
+    }
+    else {
+        print "Wir haben 0 als ticketid????\n";
+        return (0, 0, $updateTicket);
     }
 }
 
