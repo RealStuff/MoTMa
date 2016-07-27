@@ -1,4 +1,4 @@
-package Monitoring;
+package Mail;
 
 use strict;
 use warnings;
@@ -6,36 +6,14 @@ use DBI;
 use Data::Dumper;
 use MoTMa::Application;
 use POSIX qw/strftime/;
-use Log::Log4perl qw(:easy);
+use MIME::Lite;
 
 our $VERSION = $MoTMa::Application::VERSION;
-
-our ($monitoringDriver);
-
-my $logger = get_logger();
 
 # Preloaded methods go here.
 sub new {
     my $class = shift;
     my $self = {};
-
-    eval {
-        my $module = $MoTMa::Application::monitoringDriver;
-        require $MoTMa::Application::monitoringDriver . '.pm';
-        $module->import();
-        
-        my $classname = $MoTMa::Application::monitoringDriver;
-        
-        $monitoringDriver = $classname->new();
-        1;
-    };
-    if ($@) {
-        $logger->fatal(Dumper($@));
-        
-        # Muss noch schlau beendet werden
-        
-        return 0;
-    }
     
     bless $self, $class;
     return $self;
@@ -45,14 +23,33 @@ sub DESTROY {
     
 }
 
-sub getIncidentDetails {
-    my $self            = shift;
-    my $ticket          = shift;
-    my $serviceTicket   = shift;
+sub save {
+    my $self        = shift;
+    my $subject     = shift;
+    my $message     = shift;
     
-    return $monitoringDriver->getIncidentDetails($ticket, $serviceTicket);
-}
 
+    print "Will schicken...\n";
+    # my $to = 'andreas.wenger@realstuff.ch';
+    # # my $cc = 'andreas.wenger@realstuff.ch';
+    # my $from = 'andreas.wenger@realstuff.ch';
+    # my $subject = 'Test Email';
+
+    my $msg = MIME::Lite->new(
+        From     => $MoTMa::Application::alertingFrom,
+        To       => $MoTMa::Application::alertingTo,
+        # Cc       => $cc,
+        Subject  => $subject,
+        Data => $message,
+    );
+
+    if ($MoTMa::Application::alertingSmtp ne '') {
+        $msg->send('smpt', $MoTMa::Application::alertingSmtp);
+    }
+    else {
+        $msg->send()
+    }
+}
 
 1;
 __END__

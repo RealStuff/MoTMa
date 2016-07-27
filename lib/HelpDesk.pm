@@ -3,10 +3,10 @@ package HelpDesk;
 use strict;
 use warnings;
 use DBI;
-use Config::IniFiles;
 use Data::Dumper;
 use MoTMa::Application;
 use POSIX qw/strftime/;
+use Log::Log4perl qw(:easy);
 
 require Exporter;
 
@@ -32,6 +32,8 @@ our @EXPORT = qw(
 our $VERSION = $MoTMa::Application::VERSION;
 
 our ($driver, $database, $table, $dsn, $user, $password, $dbh, $sth);
+
+my $logger = get_logger();
 
 # Preloaded methods go here.
 sub new {
@@ -341,7 +343,8 @@ sub createTicket {
     my $updateTicket        = 0;
     
     # Get all related events.
-    my $query = "SELECT * FROM events JOIN tickets on fk_idtickets = idtickets WHERE  ticketstatus <> ?";
+    my $query = "SELECT * FROM events JOIN tickets on fk_idtickets = idtickets WHERE  ticketstatus <> ?
+        AND ticketstatus <> 'SUPPRESSED'";
     # Add resolved Ticketstate to query params
     my @queryParam = ($MoTMa::Application::closedHelpdeskState);
     # Add Correlation to query params
@@ -354,14 +357,15 @@ sub createTicket {
     
     # Run Query
     eval {
-        # print "Query: ".$query."\nParameters: ".Dumper(@queryParam)."\n";
+        $logger->trace("Query: ".$query."\nParameters: ".Dumper(@queryParam));
         $sth = $dbh->prepare($query);
         $sth->execute(@queryParam);
     };
     if ($@) {
         # Not able to run query
         $sth->finish();
-        return (0,0);
+        $logger->error("--------------------------- !!!! NOT ABLE TO RUN QUERY !!!!! -------------");
+        return (0,0,0);
     }
     else {
         my $rsEvents = $sth->fetchall_hashref('idevents');
@@ -373,18 +377,27 @@ sub createTicket {
                     # We found the Ticket so keep idticket
                     $idticket = $rsEvents->{$ideventHasTicket}{fk_idtickets};
                     $itsmTicket = $rsEvents->{$ideventHasTicket}{ticketnumber};
-                    print "TRACE: We have already a Ticket, so adding this event to ticket <$idticket>!\n";
+                    $logger->trace("TRACE: We have already a Ticket, so adding this event to ticket <$idticket>!");
                     $updateTicket = 1;
                 }
                 else {
                     # This should not happen
-                    print "ERROR: fk_idtickets are different - you have two open Tickets for this consolidation!\n";
+                    $logger->fatal("fk_idtickets are different - you have two open Tickets for this consolidation!");
                 }
             }
         }
         else {
-            # New Ticket - insert new 
-            $idticket = $self->insertTicket('', 'NEW', undef, undef);
+            # We have event to create new ticket - do we have to suppress creation?
+            if ($newEvents->{$idevent}{'monitoringstatus'} eq 'OK' ||
+                    $newEvents->{$idevent}{'monitoringstatus'} eq 'UP') {
+                # Suppress creation of ticket
+                $logger->info("Suppression of ticket because its OK/UP");
+                $idticket = $self->insertTicket('', 'SUPPRESSED', undef, undef);
+            }
+            else {
+                # Create Ticket
+                $idticket = $self->insertTicket('', 'NEW', undef, undef);
+            }
         }
         $sth->finish();
     }
@@ -408,7 +421,7 @@ sub createTicket {
         }
     }
     else {
-        print "Wir haben 0 als ticketid????\n";
+        $logger->error("Wir haben 0 als ticketid????");
         return (0, 0, $updateTicket);
     }
 }

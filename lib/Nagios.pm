@@ -3,10 +3,10 @@ package Nagios;
 use strict;
 use warnings;
 use DBI;
-use Config::IniFiles;
 use Data::Dumper;
 use MoTMa::Application;
 use POSIX qw/strftime/;
+use Log::Log4perl qw(:easy);
 
 our $VERSION = $MoTMa::Application::VERSION;
 

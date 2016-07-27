@@ -1,0 +1,39 @@
+#   %C Fully qualified package (or class) name of the caller
+#   %M Method or function where the logging request was issued
+
+#   %d Current date in yyyy/MM/dd hh:mm:ss format
+#   %r Number of milliseconds elapsed from program start to logging
+#      event
+
+#   %F File where the logging event occurred
+#   %H Hostname
+#   %l Fully qualified name of the calling method followed by the
+#      callers source the file name and line number between
+#      parentheses.
+#   %L Line number within the file where the log statement was issued
+#   %m The message to be logged
+#   %n Newline (OS-independent)
+
+#   %c Category of the logging event.
+#   %p Priority of the logging event
+#   %P pid of the current process
+#   %x The elements of the NDC stack (see below)
+#   %X{key} The entry 'key' of the MDC (see below)
+#   %% A literal percent (%) sign
+#   "%d %p> %F{1}:%L %M - %m%n"
+
+
+    
+# There are six predefined log levels: FATAL, ERROR, WARN, INFO, DEBUG, and TRACE.
+# FATAL will only show fatal messages. TRACE will show all messages
+log4perl.rootLogger                                 = DEBUG, Logfile
+
+log4perl.appender.Logfile                           = Log::Log4perl::Appender::File
+log4perl.appender.Logfile.filename                  = /opt/motma/var/log/motma.log
+log4perl.appender.Logfile.mode                      = append
+log4perl.appender.Logfile.layout                    = PatternLayout
+log4perl.appender.Logfile.owner                     = nagios
+log4perl.appender.Logfile.group                     = nagios
+log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %M %m%n
+#log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %C::%M %m%n
+#log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %l %m%n

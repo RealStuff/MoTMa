@@ -3,18 +3,20 @@ package Remedy;
 use strict;
 use warnings;
 use DBI;
-use Config::IniFiles;
 use Data::Dumper;
 use MoTMa::Application;
 use POSIX qw/strftime/;
 use SOAP::Lite;
 # To allow trace uncomment the following line.
 # use SOAP::Lite +trace => 'all';
+use Log::Log4perl qw(:easy);
 
 our $VERSION = $MoTMa::Application::VERSION;
 
 our ($header, $createProxy, $createUri, $createTpl, $createAction, $getProxy, $getUri, $getAction, $instanceName,
     %ticketTemplate, $updateProxy, $updateUri, $updateAction, $monitoringStatusPage);
+
+my $logger = get_logger();
 
 # Preloaded methods go here.
 sub new {
@@ -72,12 +74,10 @@ sub update {
     my $idTicket        = shift;
     my $autoClose       = shift;
     my $serviceTicket   = shift;
-
-    print "Update - ticket: ".Dumper($ticket).
-        " idTicket: $idTicket autoClose: $autoClose serviceTicket: $serviceTicket\n";
     
-    return connectToRemedy($updateProxy, $updateUri, $updateAction, $self->soapTicketDetailUpdate($ticket, $idTicket,
-            ,$autoClose, $serviceTicket));
+    my $body = $self->soapTicketDetailUpdate($ticket, $idTicket, $autoClose, $serviceTicket);
+
+    return connectToRemedy($updateProxy, $updateUri, $updateAction, $body);
 }
 
 sub get {
@@ -88,6 +88,25 @@ sub get {
     return connectToRemedy($getProxy, $getUri, $getAction, $self->soapTicketDetailGet($idTicket, $idITSMTicket));
 }
 
+sub getTicket {
+    my $self            = shift;
+    my $idTicket        = shift;
+    my $idITSMTicket    = shift || '';
+    
+    my $tickets = $self->get($idTicket, $idITSMTicket);
+
+
+
+    if ($tickets == 0) {
+        return undef;
+    }
+    else {
+        # get the ticket
+        # return $tickets->valueof('//incidentlist');
+        return $tickets->valueof('//item');
+    }
+}
+
 sub getTicketNumber {
     my $self            = shift;
     my $idTicket        = shift;
@@ -96,10 +115,13 @@ sub getTicketNumber {
     
     my $tickets = $self->get($idTicket, '');
     my $saved = 0;
+    print "---------\n";
     for my $t ($tickets->valueof('//item')) {
         $ticketNumber = $t->{incidentnumber};
+        print "ITSM-Ticket: ".$ticketNumber." by idTicket: $idTicket\n";
         $saved = 1;
     }
+    print "---------\n";
     
     return $ticketNumber;
 }
@@ -285,7 +307,8 @@ sub soapTicketDetailUpdate {
 
     #  Building SOAP Request to get a Ticket
     # Partner -> HelpdeskDB
-    return SOAP::Data->name(
+    return SOAP::Data->value(
+    # return SOAP::Data->name(
         # 'partnerincidentupdate' => \SOAP::Data->value(
             SOAP::Data->name('partnerincidentnumber')->value($instanceName.$idTicket)->type('xsd:string'),
             SOAP::Data->name('incidentnumber')->value('')->type('xsd:string'),
@@ -330,6 +353,8 @@ sub connectToRemedy {
     my $action = shift;
     my $body = shift;
     
+    $logger->trace("SOAP Action: $action\nSOAP Uri: $uri\nSOAP Proxy: $proxy\nSOAP Body: ".Dumper($body));
+
     my $result;
 
     # create the soap lite object to use
@@ -349,8 +374,9 @@ sub connectToRemedy {
         
         # Ursache
         # - Verbindung nicht möglich
-        print "Keine Verbindung moeglich - $action - $uri - $proxy - $@\n";
-        
+        $logger->error("ARS Remedy - Could not connect to ITSM/Remedy: ".$@);
+        # TODO: Alerting for e-mail/file...
+
 #         sub_print_log("ARS Remedy - Could not connect to ITSM/Remedy: ".$@);
 #         sub_mail_error("ARS Remedy - Could not connect to ITSM/Remedy","#########################################################
 # ## GroundWork 2 ITSM/Remedy - Could not connect!!       #
@@ -370,7 +396,11 @@ sub connectToRemedy {
         # Schnittstelle hat Fehler gemeldet
         # - Fehler in Schnittstelle
         #   Beachte $fault*
-        print "Schnittstelle hat Probleme ... $faultcode, $faultstring, $faultdetail \n";
+        $logger->error("ARS Remedy - SOAP ERROR - Could not call $action!
+SOAP FAULTCODE: $faultcode
+SOAP FAULTSTRING: $faultstring
+SOAP FAULTDETAIL: ".Dumper($faultdetail));
+        # TODO: MAIL message
         
     #     sub_print_log( "ARS Remedy - SOAP ERROR - Could not call $action!\n
     #     SOAP FAULTCODE: $faultcode

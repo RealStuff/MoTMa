@@ -92,7 +92,7 @@ sub main {
 ###############################################################
 sub checkValues() {
     # Check for allowed status
-    if (not($status =~/^OK$|^UP$|^CRITICAL$|^DOWN$|^WANRING$|^UNKNOWN$|^PENDING$/)) {
+    if (not($status =~/^OK$|^UP$|^CRITICAL$|^DOWN$|^WARNING$|^UNKNOWN$|^PENDING$/)) {
         logfile("!!!!!! Notification not successful - Unknown Status: '$status' !!!!!!") if $debug;
         usage();
     }

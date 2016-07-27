@@ -29,6 +29,11 @@ class Ticketitem extends CActiveRecord
      * @soap
      */
     public $incidentnumber;
+    /**
+     * @var string status
+     * @soap
+     */
+     public $status;
     
     /**
      * @return string the associated database table name

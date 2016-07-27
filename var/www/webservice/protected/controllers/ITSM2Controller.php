@@ -31,10 +31,12 @@ class ITSM2Controller extends Controller {
   public function Update($partnerincidentnumber, $incidentnumber, $type, $incident, $worklog) {
 
     $criteria = new CDbCriteria();
-    $criteria->compare('partnerincidentnumber', $partnerincidentnumber, true);
+    $criteria->compare('partnerincidentnumber', $partnerincidentnumber, false);
     $now = DateTime::createFromFormat('U.u', microtime(true));
 
     $ticket = Ticketitem::model()->find($criteria);
+    if ($ticket === NULL)
+      return 0;
     
     if ($type == "ClosedBySystem" )
       $ticket->status = "Resolved";

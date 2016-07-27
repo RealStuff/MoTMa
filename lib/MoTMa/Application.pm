@@ -29,7 +29,7 @@
 # ******************************************************************************
 #
 #
-# Copyright (c) 2014 RealStuff Informatik AG (www.realstuff.ch).
+# Copyright (c) 2016 RealStuff Informatik AG (www.realstuff.ch).
 #
 package MoTMa::Application;
 
@@ -40,13 +40,13 @@ use Data::Dumper;
 use Cwd;
 use Cwd 'abs_path';
 use File::Basename;
-use DBI;
+use DBI; 
 
 # basePath - where is our application located
 our $basePath = dirname(abs_path($0));
 $basePath =~ s/bin$// ;
 # print "BasePath: ".$basePath."\n";
-our $cfg =  new Config::IniFiles ( -file => $basePath."conf/motma.ini" );
+our $cfg =  new Config::IniFiles ( -file => $basePath."etc/motma.ini" );
 
 # createTemplate - This is the perl based template to the ticketing Interface for create operations
 our $createTemplate =  $basePath.$cfg->val('BMC', 'createTpl', '-');
@@ -70,10 +70,10 @@ our $monitoringDriver = $cfg->val('global', 'monitoringdriver', 'NAGIOS');
 our $monitoringEnv = $cfg->val($monitoringDriver, 'env');
 our $monitoringStatusPage = $cfg->val($monitoringDriver, 'statusPage');
 
-our $ticketDriver = $cfg->val('global', 'ticketdriver', 'BMC');
+our $ticketDriver = $cfg->val('global', 'ticketdriver', 'REMEDY');
 our $ticketUser = $cfg->val($ticketDriver, 'user', '');
 our $ticketPassword = $cfg->val($ticketDriver, 'password', '');
-our $closedRemedyState = $cfg->val($ticketDriver, 'closedState', 'Resolved');
+our $ticketClosedState = $cfg->val($ticketDriver, 'closedState', 'Resolved');
 
 our $createProxy = $cfg->val($ticketDriver, 'createProxy', '');
 our $createUri = $cfg->val($ticketDriver, 'createUri', '');
@@ -93,5 +93,10 @@ our $updateTicket = $cfg->val($ticketDriver, 'updateTicket', '0');
 our $autoClose = $cfg->val($ticketDriver, 'autoClose', '0');
     
 our $closedHelpdeskState = "CLOSED";
+
+our $alertingDriver = $cfg->val('global', 'alertingdriver', 'FILE');
+our $alertingFrom = $cfg->val($alertingDriver, 'from', 'root@localhost');
+our $alertingTo = $cfg->val($alertingDriver, 'to', 'root@localhost');
+our $alertingSmtp = $cfg->val($alertingDriver, 'smtp', '');
 
 our $VERSION = '0.1';

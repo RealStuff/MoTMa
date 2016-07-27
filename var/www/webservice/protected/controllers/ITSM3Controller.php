@@ -33,9 +33,9 @@ class ITSM3Controller extends Controller {
     
     $criteria=new CDbCriteria;
     if (isset($incidentnumber))
-      $criteria->compare('incidentnumber', $incidentnumber);
+      $criteria->compare('incidentnumber', $incidentnumber, false, 'AND', false);
     if (isset($partnerincidentnumber))
-      $criteria->compare('partnerincidentnumber', $partnerincidentnumber);
+      $criteria->compare('partnerincidentnumber', $partnerincidentnumber, false, 'AND', false);
     
     return Ticketitem::model()->findAll($criteria);
   }

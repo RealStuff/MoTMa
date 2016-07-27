@@ -1,4 +1,4 @@
-package Ticketing;
+package Alerting;
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use Log::Log4perl qw(:easy);
 
 our $VERSION = $MoTMa::Application::VERSION;
 
-our ($ticketDriver);
+our ($alertingDriver);
 
 my $logger = get_logger();
 
@@ -20,13 +20,13 @@ sub new {
     my $self = {};
 
     eval {
-        my $module = $MoTMa::Application::ticketDriver;
-        require $MoTMa::Application::ticketDriver . '.pm';
+        my $module = $MoTMa::Application::alertingDriver;
+        require $MoTMa::Application::alertingDriver . '.pm';
         $module->import();
         
-        my $classname = $MoTMa::Application::ticketDriver;
+        my $classname = $MoTMa::Application::alertingDriver;
         
-        $ticketDriver = $classname->new();
+        $alertingDriver = $classname->new();
         1;
     };
     if ($@) {
@@ -37,7 +37,6 @@ sub new {
         return 0;
     }
     
-    
     bless $self, $class;
     return $self;
 }
@@ -46,47 +45,19 @@ sub DESTROY {
     
 }
 
-sub update {
+sub save {
     my $self            = shift;
-    my $ticket          = shift;
-    my $idTicket        = shift;
-    my $autoClose       = shift || 0;
-    my $serviceTicket   = shift;
+    my $summary         = shift;
+    my $detail          = shift;
 
-    $ticketDriver->update($ticket, $idTicket, $autoClose, $serviceTicket);
-}
-
-sub create {
-    my $self            = shift;
-    my $ticket          = shift;
-    my $idTicket        = shift;
-    my $serviceTicket   = shift;
+    # my $ticket          = shift;
+    # my $serviceTicket   = shift;
     
-    return $ticketDriver->create($ticket, $idTicket, $serviceTicket);
-}
-
-sub get {
-    my $self            = shift;
-    my $idTicket        = shift;
-    my $itsmTicketId    = shift;
+    # print "Ticket: Monitoring.pm ".Dumper($ticket)."\n";
     
-    return $ticketDriver->get($idTicket, $itsmTicketId);
+    $alertingDriver->save($summary, $detail);
 }
 
-sub getTicket {
-    my $self            = shift;
-    my $idTicket        = shift;
-    my $itsmTicketId    = shift;
-
-    return $ticketDriver->getTicket($idTicket, $itsmTicketId);
-}
-
-sub getTicketNumber {
-    my $self            = shift;
-    my $idTicket        = shift;
-    
-    return $ticketDriver->getTicketNumber($idTicket);
-}
 
 1;
 __END__
