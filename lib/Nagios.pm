@@ -31,10 +31,6 @@ sub getEventDetail {
     my $ticket         = shift;
     my $serviceTicket  = shift;
     
-    # print "Ticket Nagios.pm:".Dumper($ticket)."\n";
-    
-    # print "Ticket Host: ".$ticket->{'NAGIOS_HOSTNAME'}."\n";
-    
     # my %ticket;
     $host              = $ticket->{'NAGIOS_HOSTNAME'};
     $hostAlias         = $ticket->{'NAGIOS_HOSTALIAS'};
@@ -66,10 +62,6 @@ sub getIncidentDetails {
     my $serviceTicket  = shift;
     my $incidentDescription; 
     my $incidentDetail;
-    
-    # print Dumper $ticket;
-    
-    # print "Service: ".$ticket{service};
     
     $self->getEventDetail($ticket, $serviceTicket);
 
@@ -121,20 +113,19 @@ $ticketLongOutput
 
 Date:     $submitDate
 Duration: $duration
-Link:     ";#$gwserverStatPage$host&amp;service=$service";
+Link:     $MoTMa::Application::monitoringStatusPage$host&amp;service=$service";
 
     $incidentDetail = $worklogDetail;
 
-#   sub_print_log(
-#     "Got following Ticket Details:
-#                Incident-Description : $incidentDescription
-#                Incident-Detail: -> see worklog
-#                Incident-Priority: $incidentPriority
-#                Worklog: $worklogDetail", time()
-#   ) if $debug;
+    $logger->trace(
+        "Got following Ticket Details:
+               Incident-Description : $incidentDescription
+               Incident-Detail: -> see worklog
+               Incident-Priority: $incidentPriority
+               Worklog: $worklogDetail");
   
-  return ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName,$companyName,
-    $worklogDescription, $worklogDetail);
+    return ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName,$companyName,
+        $worklogDescription, $worklogDetail);
 }
 
 

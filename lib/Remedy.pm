@@ -10,6 +10,7 @@ use SOAP::Lite;
 # To allow trace uncomment the following line.
 # use SOAP::Lite +trace => 'all';
 use Log::Log4perl qw(:easy);
+use Alerting;
 
 our $VERSION = $MoTMa::Application::VERSION;
 
@@ -17,6 +18,7 @@ our ($header, $createProxy, $createUri, $createTpl, $createAction, $getProxy, $g
     %ticketTemplate, $updateProxy, $updateUri, $updateAction, $monitoringStatusPage);
 
 my $logger = get_logger();
+my $alerter = new Alerting();
 
 # Preloaded methods go here.
 sub new {
@@ -64,7 +66,7 @@ sub create {
     my $idTicket        = shift;
     my $serviceTicket   = shift;
     
-    connectToRemedy($createProxy, $createUri, $createAction, $self->soapTicketDetailCreate($ticket, $idTicket,
+    return connectToRemedy($createProxy, $createUri, $createAction, $self->soapTicketDetailCreate($ticket, $idTicket,
             $serviceTicket));
 }
 
@@ -115,14 +117,12 @@ sub getTicketNumber {
     
     my $tickets = $self->get($idTicket, '');
     my $saved = 0;
-    print "---------\n";
     for my $t ($tickets->valueof('//item')) {
         $ticketNumber = $t->{incidentnumber};
-        print "ITSM-Ticket: ".$ticketNumber." by idTicket: $idTicket\n";
+        $logger->trace("ITSM-Ticket: ".$ticketNumber." by idTicket: $idTicket");
         $saved = 1;
     }
-    print "---------\n";
-    
+        
     return $ticketNumber;
 }
 
@@ -156,24 +156,24 @@ sub getHelpdeskDetail {
     # Set the template for the found Team
     if ($hostTeamContact eq 'OTK') {
         $remedyTemplate = $ticketTemplate{'OTK'};
-        # sub_print_log("Team: OTK");
+        $logger->debug("Team: OTK");
     }
     elsif ($hostTeamContact eq 'BT1') {
         $remedyTemplate = $ticketTemplate{'BT1'};
-        # sub_print_log("Team: BT1");
+        $logger->debug("Team: BT1");
     }
     elsif ($hostTeamContact eq 'BT2') {
         $remedyTemplate = $ticketTemplate{'BT2'};
-        # sub_print_log("Team: BT2");
+        $logger->debug("Team: BT2");
     }
     else {
         $remedyTemplate = $ticketTemplate{'default'};
-        # sub_print_log("Team: !No Contact information found!") if $debug;
+        $logger->debug("Team: !No Contact information found!");
     }
     
     $hostgroupName = join('',grep(!/^z{1,2}?_/, split(",", $ticketData->{'NAGIOS_HOSTGROUPNAMES'})));
     
-    print "HostGroupName: $hostgroupName\n";
+    $logger->trace("HostGroupName: $hostgroupName");
     
     # incident
     if ($serviceTicket) {
@@ -303,7 +303,7 @@ sub soapTicketDetailUpdate {
         $updateType = "ClosedBySystem";
     }
     
-    # sub_print_log( "------- Remedy Ticket update to \"$updateType\" -------", time() ) if $debug;
+    $logger->trace( "------- Remedy Ticket update to \"$updateType\" -------");
 
     #  Building SOAP Request to get a Ticket
     # Partner -> HelpdeskDB
@@ -370,20 +370,20 @@ sub connectToRemedy {
         $result = $soap->$action( $body );
     };
     if ($@) {
-        # Senden funktioniert nicht....
+        # Sending doesn't work
         
-        # Ursache
-        # - Verbindung nicht möglich
+        # Cause
+        # - Connection not posible
         $logger->error("ARS Remedy - Could not connect to ITSM/Remedy: ".$@);
-        # TODO: Alerting for e-mail/file...
+        
+        $alerter->save("ARS Remedy - Could not connect to ITSM/Remedy",
+"#########################################################
+## GroundWork 2 ITSM/Remedy - Could not connect!!       #
+#########################################################
 
-#         sub_print_log("ARS Remedy - Could not connect to ITSM/Remedy: ".$@);
-#         sub_mail_error("ARS Remedy - Could not connect to ITSM/Remedy","#########################################################
-# ## GroundWork 2 ITSM/Remedy - Could not connect!!       #
-#     #########################################################
+Please check ITSM and GroundWork
+There was an error while connecting to ITSM/Remedy ".$@);               
 
-#     Please check ITSM and GroundWork
-#     There was an error while connecting to ITSM/Remedy".$@) if $error2Email;
         return 0;
     }
 
@@ -393,36 +393,28 @@ sub connectToRemedy {
         my $faultstring = $result->faultstring;
         my $faultdetail = $result->faultdetail;
         
-        # Schnittstelle hat Fehler gemeldet
-        # - Fehler in Schnittstelle
-        #   Beachte $fault*
+        # API ended with error - Look at $faultstring
         $logger->error("ARS Remedy - SOAP ERROR - Could not call $action!
 SOAP FAULTCODE: $faultcode
 SOAP FAULTSTRING: $faultstring
 SOAP FAULTDETAIL: ".Dumper($faultdetail));
-        # TODO: MAIL message
-        
-    #     sub_print_log( "ARS Remedy - SOAP ERROR - Could not call $action!\n
-    #     SOAP FAULTCODE: $faultcode
-    #     SOAP FAULTSTRING: $faultstring
-    #     SOAP FAULTDETAIL: ".Dumper($faultdetail), time() );
-    #     sub_print_log( "------- Could not call $action! -------", time() ) if $debug;
-        
-    #     sub_mail_error("$EMAILSUBJECT not updated - Please check the Notifications on GroundWork!",
-    #     "########################################################
-    # # SOAP ERROR - Update Ticket on ARS - doesn't work:!!  #
-    # ########################################################
 
-    # SOAP FAULTCODE: $faultcode
-    # SOAP FAULTSTRING: $faultstring
-    # SOAP FAULTDETAIL: ".Dumper($faultdetail)."
+        $alerter->save("not updated - Please check the Notifications on GroundWork!",
+"########################################################
+# SOAP ERROR - Update Ticket on ARS - doesn't work:!!  #
+########################################################
 
-    # Ticket Details:
-    # ------
-    # ".$soap->serializer->envelope(
-    #     method => $action, 
-    #     $body
-    #     )) if $error2Email;
+SOAP FAULTCODE: $faultcode
+SOAP FAULTSTRING: $faultstring
+SOAP FAULTDETAIL: ".Dumper($faultdetail)."
+
+Ticket Details:
+------
+".$soap->serializer->envelope(
+                method => $action, 
+                $body
+            )
+        );
         
         # something whent wrong - could not connect to ARS. So the calling function has to care about.
         return 0;

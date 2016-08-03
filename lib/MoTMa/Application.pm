@@ -40,12 +40,18 @@ use Data::Dumper;
 use Cwd;
 use Cwd 'abs_path';
 use File::Basename;
-use DBI; 
+use DBI;
+use Alerting;
 
 # basePath - where is our application located
 our $basePath = dirname(abs_path($0));
-$basePath =~ s/bin$// ;
-# print "BasePath: ".$basePath."\n";
+if ($basePath =~ /bin$/ ) {
+    $basePath =~ s/bin$// ;
+}
+else {
+    $basePath =~ s/t$// ;
+}
+
 our $cfg =  new Config::IniFiles ( -file => $basePath."etc/motma.ini" );
 
 # createTemplate - This is the perl based template to the ticketing Interface for create operations
@@ -98,5 +104,11 @@ our $alertingDriver = $cfg->val('global', 'alertingdriver', 'FILE');
 our $alertingFrom = $cfg->val($alertingDriver, 'from', 'root@localhost');
 our $alertingTo = $cfg->val($alertingDriver, 'to', 'root@localhost');
 our $alertingSmtp = $cfg->val($alertingDriver, 'smtp', '');
+our $alertingSubject = $cfg->val($alertingDriver, 'subject', '');
+our $alertingExpiration = $cfg->val('global', 'expired', '300s');
+our ($alertingExpirationUnit) = $alertingExpiration =~ /(.)$/;
+our ($alertingExpirationTime) = $alertingExpiration =~ /^(\d+)/;
+
+our $updateWorking = $cfg->val('global', 'updateworking', 0);
 
 our $VERSION = '0.1';

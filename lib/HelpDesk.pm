@@ -208,6 +208,30 @@ sub getLastEventFromTicket {
     }
 }
 
+sub getIdeventsFromTicket {
+    my $self            = shift;
+    my $idticket        = shift;
+
+    my $query = "SELECT idevents, created FROM events WHERE fk_idtickets = ? ORDER BY idevents;";
+
+    eval {
+        $sth = $dbh->prepare($query);
+        $sth->execute($idticket);
+    };
+    if ($@) {
+        $sth->finish();
+        print "FEHLER ".Dumper($@);
+        return 0;
+    }
+    else {
+        my $events = $sth->fetchall_arrayref();
+        
+        $sth->finish();
+        return $events;
+    }
+}
+
+
 =item updateTicket()
 Beschreibung
 
@@ -248,41 +272,6 @@ sub updateTicket {
     }
 }
 
-sub getEventByExcludedTicketState {
-    my $self = shift;
-    my $excludedState       = shift;
-    
-    my @row;
-    my $second = 0;
-    
-    my $query = "SELECT * FROM helpdesk WHERE ";
-    foreach (@{$excludedState}) {
-        $query .= " AND " if $second;
-        $query .= "ticketstatus <> '".$_."'";
-        $second = 1;
-    }
-    
-    print $query."\n";
-    
-    eval {
-        $sth = $dbh->prepare($query);
-        $sth->execute();
-    };
-    if ($@) {
-        $sth->finish();
-        print "FEHLER ".Dumper($@);
-        return 0;
-    }
-    else {
-        while ( @row = $sth->fetchrow_array ) {
-            print "Row: ".Dumper(@row);
-        }
-        
-        $sth->finish();
-        return 1;
-    }
-}
-
 =item insertTicket()
 Insert an Ticket into the database
 
@@ -311,10 +300,10 @@ sub insertTicket {
         # print "TRACE: $ticketnumber, $ticketStatus, $created, $modified\n";
         $sth->execute($ticketnumber, $ticketStatus, $created, $modified);
         # GIBT LEIDER NICH IMMER KORREKTE WERTE
-        # PostgreSQL: SELECT currval(pg_get_serial_sequence('tickets','idtickets'));
         $lastId = $dbh->last_insert_id(undef, undef, 'tickets', 'idtickets');
+        # PostgreSQL: SELECT currval(pg_get_serial_sequence('tickets','idtickets'));
         $lastId2 = $dbh->selectrow_array("SELECT currval(pg_get_serial_sequence('tickets','idtickets'));");
-        print "Old: $lastId, New:$lastId2\n" if ($lastId ne $lastId2);
+        $logger->info("Old: $lastId, New:$lastId2") if ($lastId ne $lastId2);
     };
     if ($@) {
         $sth->finish();
@@ -328,7 +317,7 @@ sub insertTicket {
 
 =item createTicket()
 Check if there is already a ticket for the event. If not create a Ticket else add the event to the existing ticket.
-The event is correlated as defined in configuratoin
+The event is correlated as defined in the configuration
 
 Your Parameters are:
     idevent
@@ -377,8 +366,14 @@ sub createTicket {
                     # We found the Ticket so keep idticket
                     $idticket = $rsEvents->{$ideventHasTicket}{fk_idtickets};
                     $itsmTicket = $rsEvents->{$ideventHasTicket}{ticketnumber};
-                    $logger->trace("TRACE: We have already a Ticket, so adding this event to ticket <$idticket>!");
-                    $updateTicket = 1;
+                    if ($rsEvents->{$ideventHasTicket}{ticketstatus} eq 'NEW' || 
+                            $rsEvents->{$ideventHasTicket}{ticketstatus} eq 'UPDATE' || 
+                            $rsEvents->{$ideventHasTicket}{ticketstatus} eq 'PROCESSING') {
+                        $updateTicket = 2;
+                    }
+                    else {
+                        $updateTicket = 1;
+                    }
                 }
                 else {
                     # This should not happen
@@ -403,7 +398,12 @@ sub createTicket {
     }
     
     # Update Event with ticketid
-    if ($idticket > 0) {
+    if ($updateTicket == 2) {
+        $logger->info("Do not update Ticket because we have a ticket motma is working on (NEW, UPDATE or PROCESSING)");
+        return ($idticket, $itsmTicket, $updateTicket);
+    }
+    elsif ($idticket > 0) {
+        $logger->info("We have already a Ticket, so adding this event to ticket <$idticket>!") if $updateTicket;
         my $update = "UPDATE events SET fk_idtickets = ? WHERE idevents = ?";
         eval {
             $sth = $dbh->prepare($update);
@@ -421,7 +421,6 @@ sub createTicket {
         }
     }
     else {
-        $logger->error("Wir haben 0 als ticketid????");
         return (0, 0, $updateTicket);
     }
 }

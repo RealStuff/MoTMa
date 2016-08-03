@@ -27,19 +27,12 @@ sub save {
     my $self        = shift;
     my $subject     = shift;
     my $message     = shift;
-    
-
-    print "Will schicken...\n";
-    # my $to = 'andreas.wenger@realstuff.ch';
-    # # my $cc = 'andreas.wenger@realstuff.ch';
-    # my $from = 'andreas.wenger@realstuff.ch';
-    # my $subject = 'Test Email';
 
     my $msg = MIME::Lite->new(
         From     => $MoTMa::Application::alertingFrom,
         To       => $MoTMa::Application::alertingTo,
         # Cc       => $cc,
-        Subject  => $subject,
+        Subject  => $MoTMa::Application::alertingSubject.$subject,
         Data => $message,
     );
 

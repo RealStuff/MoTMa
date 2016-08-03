@@ -11,6 +11,8 @@ use Log::Log4perl qw(:easy);
 our $VERSION = $MoTMa::Application::VERSION;
 
 our ($alertingDriver);
+our $now;
+our $ticketCreated;
 
 my $logger = get_logger();
 
@@ -49,13 +51,20 @@ sub save {
     my $self            = shift;
     my $summary         = shift;
     my $detail          = shift;
+    
+    if (lc($MoTMa::Application::alertingExpirationUnit) eq "s") {
+        $ticketCreated->add(seconds => $MoTMa::Application::alertingExpirationTime);
+    }
+    elsif (lc($MoTMa::Application::alertingExpirationUnit) eq "m") {
+        $ticketCreated->add(minutes => $MoTMa::Application::alertingExpirationTime);
+    }
+    else {
+        $ticketCreated->add(minutes => 2);
+    }
 
-    # my $ticket          = shift;
-    # my $serviceTicket   = shift;
-    
-    # print "Ticket: Monitoring.pm ".Dumper($ticket)."\n";
-    
-    $alertingDriver->save($summary, $detail);
+    if ( $now > $ticketCreated ) {
+        $alertingDriver->save($summary, $detail);
+    }
 }
 
 

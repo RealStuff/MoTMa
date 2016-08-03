@@ -53,6 +53,8 @@ use Ticketing;
 use Monitoring;
 use Alerting;
 use Data::Dumper;
+use DateTime;
+use DateTime::Format::Strptime;
 
 # FATAL, ERROR, WARN, INFO, DEBUG, and TRACE 
 use Log::Log4perl qw(:levels);
@@ -85,6 +87,7 @@ sub main {
     my $alert = new Alerting();
     my $serviceTicket;
     my $updateTicket;
+    my $workingLoop = 0;
 
     $logger->trace("trace");
     $logger->debug("debug");
@@ -94,13 +97,13 @@ sub main {
     $logger->fatal("fatal");
     
     while ($run) {
+        $workingLoop++;
         # Get new events
         $logger->info( "Check for new Events" );
         my $events = $helpDesk->getNewEvents();
         # Process the new events ( Create Ticket or add event to existing ticket )
-        foreach my $idevent (keys %$events) {
-
-            $logger->info("--- NEW EVENT $events->{$idevent}{host}/$events->{$idevent}{service} ---");
+        foreach my $idevent (sort keys(%$events)) {
+            $logger->info("--- NEW EVENT [$events->{$idevent}{created}] $events->{$idevent}{host}/$events->{$idevent}{service} ---");
             
             # Create Ticket
             #   $idticket: id of ticket from helpdeskdb
@@ -108,12 +111,15 @@ sub main {
             #   $updateTicket: Do we have to update this ticket?
             my ($idticket, $itsmTicket, $updateTicket) = $helpDesk->createTicket($idevent,$events);
             if ($idticket) {
-                if ($updateTicket) {
-
-                    # WE HAVE TO CHECK IF THE TICKET IS NEW - 
-
+                if ($updateTicket == 1) {
                     # helpdesk ticket needs update (we have already a ticket for this host/service)
                     $helpDesk->updateTicket($idticket, $itsmTicket, 'UPDATE');
+                }
+                elsif ($updateTicket == 2) {
+                    $logger->info("NEW but we have now at least two events in this ticket");
+                }
+                else {
+                    $logger->info("NEW ticket created");
                 }
             }
             else {
@@ -126,15 +132,18 @@ sub main {
                 $run = 0;
                 last;
             }
-            sleep 1;
         }
         
+        # sleep 5;
+
         # Check if stop of daemon is requested
         last if not $run;
         
         # Get new tickets and create incident on ITSM System
-        $logger->info( "Check for new Tickets" );
+        $logger->info( "Check for \"NEW\" Tickets" );
         my $tickets = $helpDesk->getTicketsByTicketState('NEW');
+        # Prepare alerting
+        $Alerting::now = DateTime->now->set_time_zone(DateTime::TimeZone::Local->TimeZone());
         # Process the new tickets and create them on ticketing system
         foreach my $idticket (keys %$tickets) {
             # Get the Parameters
@@ -145,15 +154,17 @@ sub main {
             if ($tickets->{$idticket}{service} eq '') {
                 $serviceTicket = 0;
             }
+
+            # Prepare alerting
+            my $parser = DateTime::Format::Strptime->new( pattern => '%Y-%m-%d %H:%M:%S' );
+            $Alerting::ticketCreated = $parser->parse_datetime($tickets->{$idticket}{created});
             
             # Send Ticket to Ticketing System
             if ($ticketSystem->create(\%test, $idticket, $serviceTicket)) {
-                    $helpDesk->updateTicket($idticket, '', 'PROCESSING');
+                $helpDesk->updateTicket($idticket, '', 'PROCESSING');
             }
             else {
-                $logger->error("ERROR - Please Check your Ticketing System");
-                $alert->save("ERROR - Please Check your Ticketing System",
-                    Dumper($tickets->{$idticket}));
+                $logger->warn("Please Check your Ticketing System - its probably not running!");
             }
         }
         
@@ -161,7 +172,7 @@ sub main {
         last if not $run;
 
         # Get updatable tickets and send data to ITSM System
-        $logger->info( "Check for updateable Tickets" );
+        $logger->info( "Check for \"UPDATE\" Tickets" );
         my $updates = $helpDesk->getTicketsByTicketState("UPDATE");
         # Process the updatable tickets and update them on ticketing system
         foreach my $idticket (keys %$updates) {
@@ -179,7 +190,7 @@ sub main {
             }
 
             my $itsmTicket = '';
-            if (not defined $updates->{$idticket}{ticketnumber}) {
+            if ($updates->{$idticket}{ticketnumber} eq '') {
                 $itsmTicket = $ticketSystem->getTicketNumber($idticket);
             }
             else {
@@ -187,23 +198,20 @@ sub main {
             }
 
             if ($itsmTicket eq '') {
-                # TODO: Check how often this ticket was asked by itsm and create error when to many
-                $logger->warn("!!!!!!!! ITSM TICKET not found !!!!!!!!!");
+                $logger->warn("!!!!!!!! ITSM TICKET $idticket not found !!!!!!!!!".Dumper($updates->{$idticket}));
                 # try in next round
             }
             else {
                 # Close Ticket on ITSM Ticketing if in Good state
                 if ($MoTMa::Application::autoClose && $events->{$idevents}{monitoringstatus} =~ /^OK$|^UP$/ ) {
-                    $logger->trace("ITSM Ticket = $itsmTicket idticket = $idticket serviceTicket = $serviceTicket CLOSED");
+                    $logger->info("ITSM Ticket = $itsmTicket idticket = $idticket serviceTicket = $serviceTicket CLOSED");
                     $helpDesk->updateTicket($idticket, $itsmTicket, 'CLOSED');
                     $ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket);
-                    $logger->trace("------AutoClose-------");
                 }
                 # Only update Ticket
                 elsif ($MoTMa::Application::updateTicket) {
                     $helpDesk->updateTicket($idticket, $itsmTicket, 'WORKING');
                     $ticketSystem->update(\%eventDetail, $idticket, 0, $serviceTicket);
-                    $logger->trace("--------Update--------");
                 }
                 else {
                     $helpDesk->updateTicket($idticket, $itsmTicket, 'WORKING');
@@ -215,7 +223,7 @@ sub main {
         last if not $run;
         
         # Get incidents in progress
-        $logger->info( "Get incidents in progress" );
+        $logger->info( "Check for \"PROCESSING\" Tickets" );
         my $incidents = $helpDesk->getTicketsByTicketState('PROCESSING');
         # Get information from ITSM and update tickets
         foreach my $idticket (keys %$incidents) {
@@ -234,34 +242,32 @@ sub main {
         # Check if stop of daemon is requested
         last if not $run;
 
-        # Get incidents supporters should work on
-        $logger->info( "Check state of \"working\" tickets" );
-        $incidents = $helpDesk->getTicketsByTicketState('WORKING');
-        # Get information from ITSM and update tickets
-        foreach my $idticket (keys %$incidents) {
-            # Get Ticket
-            my $itsmTicket = $ticketSystem->getTicket($idticket, '');
-            if (defined($itsmTicket->{'incidentnumber'})) {
-                if ($itsmTicket->{'status'} eq $MoTMa::Application::ticketClosedState) {
-                    $helpDesk->updateTicket($idticket, $itsmTicket->{'incidentnumber'}, 'CLOSED');
-                    $logger->trace("Found Remedy Ticket: ".$itsmTicket->{'incidentnumber'}." with status: ".
-                        $itsmTicket->{'status'}." - WE close it...");
+        if ($workingLoop >= $MoTMa::Application::updateWorking) {
+            # Get incidents supporters should work on
+            $logger->info( "Check for \"WORKING\" Tickets" );
+            $incidents = $helpDesk->getTicketsByTicketState('WORKING');
+            # Get information from ITSM and update tickets
+            foreach my $idticket (keys %$incidents) {
+                # Get Ticket
+                my $itsmTicket = $ticketSystem->getTicket($idticket, '');
+                if (defined($itsmTicket->{'incidentnumber'})) {
+                    if ($itsmTicket->{'status'} eq $MoTMa::Application::ticketClosedState) {
+                        $helpDesk->updateTicket($idticket, $itsmTicket->{'incidentnumber'}, 'CLOSED');
+                        $logger->trace("Found Remedy Ticket: ".$itsmTicket->{'incidentnumber'}." with status: ".
+                            $itsmTicket->{'status'}." - WE close it...");
+                    }
+                }
+                else {
+                    $logger->error( "Did not find a 'incidentnumber' for idhelpdesk: $idticket" );
                 }
             }
-            else {
-                $logger->error( "Did not find a 'incidentnumber' for idhelpdesk: $idticket" );
-            }
 
-            # if ($ticketId ne '') {
-            #     $helpDesk->updateTicket($idticket, $ticketId, 'WORKING');
-            # }
-            # else {
-            #     print "Ticket not found";
-            #     #   TRACE HOW often its checked
-            # }
+            # Reset Working Loop to 0
+            $workingLoop = 0;
         }
 
-        sleep 20 if $run;
+        # wee want run every
+        sleep 10 if $run;
     }
 
     $logger->info( "Shutting down motma application" );
