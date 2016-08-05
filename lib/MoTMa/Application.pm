@@ -104,7 +104,8 @@ our $alertingFrom = $cfg->val($alertingDriver, 'from', 'root@localhost');
 our $alertingTo = $cfg->val($alertingDriver, 'to', 'root@localhost');
 our $alertingSmtp = $cfg->val($alertingDriver, 'smtp', '');
 our $alertingSubject = $cfg->val($alertingDriver, 'subject', '');
-our $alertingExpiration = $cfg->val('global', 'expired', '300s');
+
+my $alertingExpiration = $cfg->val('global', 'expired', '300s');
 our ($alertingExpirationUnit) = $alertingExpiration =~ /(.)$/;
 our ($alertingExpirationTime) = $alertingExpiration =~ /^(\d+)/;
 
@@ -112,15 +113,15 @@ my $loopIntervalTmp = $cfg->val('global', 'loopinterval', '5s');
 my ($loopIntervalTmpUnit) = $loopIntervalTmp =~ /(.)$/;
 my ($loopIntervalTmpTime) = $loopIntervalTmp =~ /^(\d+)/;
 our $loopInterval;
-$loopInterval = ($loopIntervalTmpTime * 60) if $loopIntervalTmpUnit eq 'm';
 $loopInterval = $loopIntervalTmpTime if $loopIntervalTmpUnit eq 's';
+$loopInterval = $loopIntervalTmpTime*60 if $loopIntervalTmpUnit eq 'm';
 
-my $updateWorkingTmp = $cfg->val('global', 'updateworking', '300s');
-my ($updateWorkingTmpUnit) = $updateWorkingTmp =~ /(.)$/;
-my ($updateWorkingTmpTime) = $updateWorkingTmp =~ /^(\d+)/;
+our $updateWorkingTmp = $cfg->val('global', 'updateworking', '300s');
+our ($updateWorkingTmpUnit) = $updateWorkingTmp =~ /(.)$/;
+our ($updateWorkingTmpTime) = $updateWorkingTmp =~ /^(\d+)/;
 our $updateWorking;
-$updateWorking = (($updateWorkingTmpTime * 60) / $loopInterval) if $loopIntervalTmpUnit eq 'm';
-$updateWorking = ($updateWorkingTmpTime / $loopInterval) if $loopIntervalTmpUnit eq 's';
+$updateWorking = $updateWorkingTmpTime/$loopInterval if $updateWorkingTmpUnit eq 's';
+$updateWorking = $updateWorkingTmpTime*60/$loopInterval if $updateWorkingTmpUnit eq 'm';
 
 
 our $VERSION = '0.1';
