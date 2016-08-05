@@ -13,6 +13,8 @@ our $VERSION = $MoTMa::Application::VERSION;
 our ($host, $hostAlias, $hostAddress, $service, $ticketState, $ticketOutput, $ticketLongOutput, $duration,
      $hostgroupName, $hostgroupAlias, $submitDate, $submitLongDate, $notificationType);
 
+my $logger = get_logger();
+
 # Preloaded methods go here.
 sub new {
     my $class = shift;
@@ -82,12 +84,11 @@ sub getIncidentDetails {
 
     # The default Productname
     my $productName = "";
-    $productName = "SAP Services";
-    #$productName = "SAP Basis-Outtasking";
+    $productName = "GroundWork Services";
     # The default Customer
     my $customerName = "";
     my $companyName = "";
-    $companyName = "Swisscom IT Services Enterprise Solutions AG";
+    $companyName = "RealStuff Informatik AG";
 
     # worklog
     my $worklogDescription = $incidentDescription;

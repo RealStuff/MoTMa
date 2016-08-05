@@ -134,8 +134,6 @@ sub main {
             }
         }
         
-        # sleep 5;
-
         # Check if stop of daemon is requested
         last if not $run;
         
@@ -165,6 +163,7 @@ sub main {
             }
             else {
                 $logger->warn("Please Check your Ticketing System - its probably not running!");
+                $logger->trace("Now: ".$Alerting::now." Ticketcreated: ".$Alerting::ticketCreated);
             }
         }
         
@@ -189,32 +188,36 @@ sub main {
                 $serviceTicket = 0;
             }
 
-            my $itsmTicket = '';
+            my $ticketNumber = '';
             if ($updates->{$idticket}{ticketnumber} eq '') {
-                $itsmTicket = $ticketSystem->getTicketNumber($idticket);
+                $ticketNumber = $ticketSystem->getTicketNumber($idticket);
             }
             else {
-                $itsmTicket = $updates->{$idticket}{ticketnumber};
+                $ticketNumber = $updates->{$idticket}{ticketnumber};
             }
 
-            if ($itsmTicket eq '') {
+            if ($ticketNumber eq '') {
                 $logger->warn("!!!!!!!! ITSM TICKET $idticket not found !!!!!!!!!".Dumper($updates->{$idticket}));
                 # try in next round
             }
             else {
                 # Close Ticket on ITSM Ticketing if in Good state
                 if ($MoTMa::Application::autoClose && $events->{$idevents}{monitoringstatus} =~ /^OK$|^UP$/ ) {
-                    $logger->info("ITSM Ticket = $itsmTicket idticket = $idticket serviceTicket = $serviceTicket CLOSED");
-                    $helpDesk->updateTicket($idticket, $itsmTicket, 'CLOSED');
-                    $ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket);
+                    $logger->info("ITSM Ticket = $ticketNumber idticket = $idticket serviceTicket = $serviceTicket CLOSED");
+
+                    # Try to close ticket
+                    # When successfuly update helpdesk to CLOSED
+                    if ($ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket)) {
+                        $helpDesk->updateTicket($idticket, $ticketNumber, 'CLOSED');
+                    }
                 }
                 # Only update Ticket
                 elsif ($MoTMa::Application::updateTicket) {
-                    $helpDesk->updateTicket($idticket, $itsmTicket, 'WORKING');
+                    $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');
                     $ticketSystem->update(\%eventDetail, $idticket, 0, $serviceTicket);
                 }
                 else {
-                    $helpDesk->updateTicket($idticket, $itsmTicket, 'WORKING');
+                    $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');
                 }
             }
         }
@@ -228,13 +231,13 @@ sub main {
         # Get information from ITSM and update tickets
         foreach my $idticket (keys %$incidents) {
             # Get Ticket ID
-            my $ticketId = $ticketSystem->getTicketNumber($idticket);
+            my $ticketNumber = $ticketSystem->getTicketNumber($idticket);
 
-            if ($ticketId ne '') {
-                $helpDesk->updateTicket($idticket, $ticketId, 'WORKING');
+            if ($ticketNumber ne '') {
+                $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');
             }
             else {
-                $logger->warning( "Ticket not found" );
+                $logger->warn( "Ticket not found" );
                 # TODO: TRACE HOW often its checked
             }
         }
@@ -267,7 +270,7 @@ sub main {
         }
 
         # wee want run every
-        sleep 10 if $run;
+        sleep $MoTMa::Application::loopInterval if $run;
     }
 
     $logger->info( "Shutting down motma application" );

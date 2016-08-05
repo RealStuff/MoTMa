@@ -21,19 +21,23 @@
 #   %X{key} The entry 'key' of the MDC (see below)
 #   %% A literal percent (%) sign
 #   "%d %p> %F{1}:%L %M - %m%n"
-
-
     
 # There are six predefined log levels: FATAL, ERROR, WARN, INFO, DEBUG, and TRACE.
 # FATAL will only show fatal messages. TRACE will show all messages
-log4perl.rootLogger                                 = DEBUG, Logfile
+log4perl.rootLogger                                 = TRACE, Screen, Logfile
 
 log4perl.appender.Logfile                           = Log::Log4perl::Appender::File
+log4perl.appender.Logfile.Threshold                 = DEBUG
 log4perl.appender.Logfile.filename                  = /opt/motma/var/log/motma.log
 log4perl.appender.Logfile.mode                      = append
 log4perl.appender.Logfile.layout                    = PatternLayout
 log4perl.appender.Logfile.owner                     = nagios
 log4perl.appender.Logfile.group                     = nagios
+log4perl.appender.Logfile.recreate                  = 1
 log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %M %m%n
-#log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %C::%M %m%n
-#log4perl.appender.Logfile.layout.ConversionPattern  = %d: %-5p: %l %m%n
+
+log4perl.appender.Screen                            = Log::Log4perl::Appender::Screen
+log4perl.appender.Screen.stderr                     = 0
+log4perl.appender.Screen.utf8                       = 1
+log4perl.appender.Screen.layout                     = Log::Log4perl::Layout::PatternLayout::Multiline
+log4perl.appender.Screen.layout.ConversionPattern   = %d: %-5p: %M %m%n

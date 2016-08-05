@@ -70,41 +70,26 @@ sub save {
 
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
-=head1 NAME
+=head1 Alerting
 
-Helpdesk - Perl extension for blah blah blah
+Alerting - Perl extension for MoTMa
 
 =head1 SYNOPSIS
 
-  use Helpdesk;
-  blah blah blah
+  use Alerting;
 
 =head1 DESCRIPTION
 
-Stub documentation for Helpdesk, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
+This Module has a funtion save() which will alert with the alertingDriver. 
 
 =head2 EXPORT
 
 None by default.
 
-
-
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+Read the related Modules documentation.
 
 =head1 AUTHOR
 
@@ -112,11 +97,25 @@ Andreas Wenger, E<lt>andreas.wenger@realstuff.chE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2014 by Andreas Wenger
+Copyright (C) 2016 by Andreas Wenger
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.16.2 or,
-at your option, any later version of Perl 5 you may have available.
+it under the same terms as LGP
 
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.  You may also can
+redistribute it and/or modify it under the terms of the Perl
+Artistic License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received copies of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut

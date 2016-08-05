@@ -117,13 +117,20 @@ sub getTicketNumber {
     
     my $tickets = $self->get($idTicket, '');
     my $saved = 0;
-    for my $t ($tickets->valueof('//item')) {
-        $ticketNumber = $t->{incidentnumber};
-        $logger->trace("ITSM-Ticket: ".$ticketNumber." by idTicket: $idTicket");
-        $saved = 1;
+    eval {
+        for my $t ($tickets->valueof('//item')) {
+            $ticketNumber = $t->{incidentnumber};
+            $logger->trace("ITSM-Ticket: ".$ticketNumber." by idTicket: $idTicket");
+            $saved = 1;
+        }
+    };
+    if ($@) {
+        $logger->error("ITSM-Ticket not found. ERROR: ".Dumper($@));
+        return '';
     }
-        
-    return $ticketNumber;
+    else {
+        return $ticketNumber;
+    } 
 }
 
 sub getHelpdeskDetail {

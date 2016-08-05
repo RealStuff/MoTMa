@@ -41,7 +41,6 @@ use Cwd;
 use Cwd 'abs_path';
 use File::Basename;
 use DBI;
-use Alerting;
 
 # basePath - where is our application located
 our $basePath = dirname(abs_path($0));
@@ -109,6 +108,19 @@ our $alertingExpiration = $cfg->val('global', 'expired', '300s');
 our ($alertingExpirationUnit) = $alertingExpiration =~ /(.)$/;
 our ($alertingExpirationTime) = $alertingExpiration =~ /^(\d+)/;
 
-our $updateWorking = $cfg->val('global', 'updateworking', 0);
+my $loopIntervalTmp = $cfg->val('global', 'loopinterval', '5s');
+my ($loopIntervalTmpUnit) = $loopIntervalTmp =~ /(.)$/;
+my ($loopIntervalTmpTime) = $loopIntervalTmp =~ /^(\d+)/;
+our $loopInterval;
+$loopInterval = ($loopIntervalTmpTime * 60) if $loopIntervalTmpUnit eq 'm';
+$loopInterval = $loopIntervalTmpTime if $loopIntervalTmpUnit eq 's';
+
+my $updateWorkingTmp = $cfg->val('global', 'updateworking', '300s');
+my ($updateWorkingTmpUnit) = $updateWorkingTmp =~ /(.)$/;
+my ($updateWorkingTmpTime) = $updateWorkingTmp =~ /^(\d+)/;
+our $updateWorking;
+$updateWorking = (($updateWorkingTmpTime * 60) / $loopInterval) if $loopIntervalTmpUnit eq 'm';
+$updateWorking = ($updateWorkingTmpTime / $loopInterval) if $loopIntervalTmpUnit eq 's';
+
 
 our $VERSION = '0.1';
