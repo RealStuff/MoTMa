@@ -54,7 +54,7 @@ status() {
         echo "MoTMa is not running"
         exit 3
     else
-        echo -n "MoTma status is unknown"
+        echo "MoTma status is unknown"
         exit 4
     fi
 }

@@ -27,7 +27,7 @@
 log4perl.rootLogger                                 = TRACE, Screen, Logfile
 
 log4perl.appender.Logfile                           = Log::Log4perl::Appender::File
-log4perl.appender.Logfile.Threshold                 = DEBUG
+log4perl.appender.Logfile.Threshold                 = INFO
 log4perl.appender.Logfile.filename                  = /opt/motma/var/log/motma.log
 log4perl.appender.Logfile.mode                      = append
 log4perl.appender.Logfile.layout                    = PatternLayout
