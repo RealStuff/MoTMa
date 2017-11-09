@@ -47,14 +47,29 @@ status() {
     STATUS=$($binary status)
     if echo $STATUS | grep -e  'Running:.*yes' > /dev/null;
     then
-        echo "MoTMa is running"
+        echo -en "\\033[60G"
+        echo -n "["
+        echo -en "\\033[1;32m"
+        echo -n "running"
+        echo -en "\\033[0;39m"
+        echo "]"
         exit 0
     elif echo $STATUS | grep -e  'Running:.*no' > /dev/null;
     then
-        echo "MoTMa is not running"
+        echo -en "\\033[60G"
+        echo -n "["
+        echo -en "\\033[1;31m"
+        echo -n "not running"
+        echo -en "\\033[0;39m"
+        echo "]"
         exit 3
     else
-        echo "MoTma status is unknown"
+        echo -en "\\033[60G"
+        echo -n "["
+        echo -en "\\033[1;31m"
+        echo -n "not running"
+        echo -en "\\033[0;39m"
+        echo "]"
         exit 4
     fi
 }
