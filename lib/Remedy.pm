@@ -193,9 +193,9 @@ sub getHelpdeskDetail {
     }
 
     # The default Productname
-    $productName = "SAP Services";
+    $productName = "RS Services";
     # The default Customer
-    $companyName = "Swisscom IT Services Enterprise Solutions AG";
+    $companyName = "RealStuff Informatik AG";
 
     # worklog
     $worklogDescription = $incidentDescription;
