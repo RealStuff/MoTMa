@@ -55,7 +55,12 @@ my $VERSION = $MoTMa::Application::VERSION;
 my $debug = $MoTMa::Application::debug;
 my ( $host, $service, $submitdate, $message, $status, $priority, $category, $parameters, $versions, $help, $man );
 
+# Set default (empty) values
 $service = "";
+$status = "";
+$priority = "";
+$category = "";
+
 $man = 0;
 $help = 0;
 $versions = 0;
@@ -272,7 +277,24 @@ Credits goes to RealStuff Informatik AG
 
 =head1 LICENSE
 
-LGPL 
+This library is free software; you can redistribute it and/or modify
+it under the same terms as LGP
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.  You may also can
+redistribute it and/or modify it under the terms of the Perl
+Artistic License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received copies of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =head1 TESTED
 
