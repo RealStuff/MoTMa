@@ -52,8 +52,11 @@ sub update {
     my $idTicket        = shift;
     my $autoClose       = shift || 0;
     my $serviceTicket   = shift;
+    my $ticketNumber    = shift;
 
-    $ticketDriver->update($ticket, $idTicket, $autoClose, $serviceTicket);
+    $logger->info("Running update\n");
+
+    $ticketDriver->update($ticket, $idTicket, $autoClose, $serviceTicket, $ticketNumber);
 }
 
 sub create {

@@ -158,8 +158,15 @@ sub main {
             $Alerting::ticketCreated = $parser->parse_datetime($tickets->{$idticket}{created});
             
             # Send Ticket to Ticketing System
-            if ($ticketSystem->create(\%test, $idticket, $serviceTicket)) {
-                $helpDesk->updateTicket($idticket, '', 'PROCESSING');
+            my $incidentId = $ticketSystem->create(\%test, $idticket, $serviceTicket);
+            if ($incidentId ne 0) {
+                if ($incidentId eq 1) {
+                    # There is no Incident ID in the create response - we will try later to get the Incident ID
+                    $helpDesk->updateTicket($idticket, '', 'PROCESSING');
+                }
+                else {
+                    $helpDesk->updateTicket($idticket, $incidentId, 'WORKING');
+                }
             }
             else {
                 $logger->warn("Please Check your Ticketing System - its probably not running!");
@@ -207,14 +214,14 @@ sub main {
 
                     # Try to close ticket
                     # When successfuly update helpdesk to CLOSED
-                    if ($ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket)) {
+                    if ($ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket, $ticketNumber)) {
                         $helpDesk->updateTicket($idticket, $ticketNumber, 'CLOSED');
                     }
                 }
                 # Only update Ticket
                 elsif ($MoTMa::Application::updateTicket) {
                     $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');
-                    $ticketSystem->update(\%eventDetail, $idticket, 0, $serviceTicket);
+                    $ticketSystem->update(\%eventDetail, $idticket, 0, $serviceTicket, $ticketNumber);
                 }
                 else {
                     $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');

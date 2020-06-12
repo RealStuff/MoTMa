@@ -80,9 +80,15 @@ our $ticketUser = $cfg->val($ticketDriver, 'user', '');
 our $ticketPassword = $cfg->val($ticketDriver, 'password', '');
 our $ticketClosedState = $cfg->val($ticketDriver, 'closedState', 'Resolved');
 
+our $remedyforceREST = $cfg->val($ticketDriver, 'remedyforceREST', '');
+our $salesforceREST = $cfg->val($ticketDriver, 'salesforceREST', '');
+our $salesforceBusinessService = $cfg->val($ticketDriver, 'salesforceBusinessService');
+our $salesforceServiceOffering = $cfg->val($ticketDriver, 'salesforceServiceOffering');
+
 our $createProxy = $cfg->val($ticketDriver, 'createProxy', '');
 our $createUri = $cfg->val($ticketDriver, 'createUri', '');
 our $createAction = $cfg->val($ticketDriver, 'createAction', '');
+our $createUrl = $cfg->val($ticketDriver, 'createUrl', '');
 
 our $getProxy = $cfg->val($ticketDriver, 'getProxy', '');
 our $getUri = $cfg->val($ticketDriver, 'getUri', '');
@@ -91,6 +97,10 @@ our $getAction = $cfg->val($ticketDriver, 'getAction', '');
 our $updateProxy = $cfg->val($ticketDriver, 'updateProxy', '');
 our $updateUri = $cfg->val($ticketDriver, 'updateUri', '');
 our $updateAction = $cfg->val($ticketDriver, 'updateAction', '');
+
+our $loginProxy = $cfg->val($ticketDriver, 'loginProxy', '');
+our $loginUri = $cfg->val($ticketDriver, 'loginUri', '');
+our $loginAction = $cfg->val($ticketDriver, 'loginAction', '');
 
 our $instanceName = $cfg->val($ticketDriver, 'instanceName', '');
 our $ticketTemplate = $cfg->val($ticketDriver, 'ticketTemplate', '');
