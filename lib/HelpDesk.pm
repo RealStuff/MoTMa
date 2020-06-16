@@ -231,6 +231,29 @@ sub getIdeventsFromTicket {
     }
 }
 
+sub getTicketNumber {
+    my $self            = shift;
+    my $idTicket        = shift;
+
+    my $query = "SELECT ticketnumber FROM tickets WHERE idtickets = ?;";
+
+    eval {
+        $sth = $dbh->prepare($query);
+        $sth->execute($idTicket);
+    };
+    if ($@) {
+        $sth->finish();
+        print "FEHLER ".Dumper($@);
+        return 0;
+    }
+    else {
+        my ($ticketNumber) = $sth->fetchrow_array();
+        
+        $sth->finish();
+        return $ticketNumber;
+    }
+}
+
 
 =item updateTicket()
 Beschreibung

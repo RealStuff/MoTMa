@@ -78,7 +78,7 @@ our $monitoringStatusPage = $cfg->val($monitoringDriver, 'statusPage');
 our $ticketDriver = $cfg->val('global', 'ticketdriver', 'REMEDY');
 our $ticketUser = $cfg->val($ticketDriver, 'user', '');
 our $ticketPassword = $cfg->val($ticketDriver, 'password', '');
-our $ticketClosedState = $cfg->val($ticketDriver, 'closedState', 'Resolved');
+our @ticketClosedState = split(',', $cfg->val($ticketDriver, 'closedState', 'Resolved'));
 
 our $remedyforceREST = $cfg->val($ticketDriver, 'remedyforceREST', '');
 our $salesforceREST = $cfg->val($ticketDriver, 'salesforceREST', '');

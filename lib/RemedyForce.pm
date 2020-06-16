@@ -193,17 +193,37 @@ sub create {
             $cache->set( $salesforceServiceOffering.'_FKServiceOffering', $serviceOfferingId);
         }
 
+        # get Impact ID
+        my $impactId = $cache->get($incidentPriority.'_FKImpact');
+        if (not defined $impactId) {
+            $logger->info("No FKImpact available. Try to get new on for: ".$incidentPriority);
+
+            $impactId = $self->getSalesForceId($incidentPriority, 'Name', 'BMCServiceDesk__Impact__c');
+
+            $cache->set( $incidentPriority.'_FKImpact', $impactId);
+        }
+
+        # get Urgency ID
+        my $urgencyId = $cache->get('MEDIUM_FKUrgency');
+        if (not defined $urgencyId) {
+            $logger->info("No FKUrgency available. Try to get new on for: ".$incidentPriority);
+
+            $urgencyId = $self->getSalesForceId($incidentPriority, 'Name', 'BMCServiceDesk__Urgency__c');
+
+            $cache->set( $incidentPriority.'_FKUrgency', $urgencyId );
+        }
+
         # Update the ticket
         # In the moment we do net set the shortDescription. 
         # "BMCServiceDesk__shortDescription__c": "'.$incidentDetail.'",
+        # "Tier__c":"Important",
         my $content = '{
             "BMCServiceDesk__incidentDescription__c": "'.$incidentDetail.'",
             "BMCServiceDesk__FKBusinessService__c": "'.$businessServiceId.'",
             "BMCServiceDesk__FKServiceOffering__c": "'.$serviceOfferingId.'",
             "BMCServiceDesk__FKBMC_BaseElement__c": "'.$hostId.'",
-            "Tier__c":"Important",
-            "BMCServiceDesk__FKImpact__c": "a1P20000002QQeXEAW",
-            "BMCServiceDesk__FKUrgency__c":"a2G20000000PSUYEA4"
+            "BMCServiceDesk__FKImpact__c": "'.$impactId.'",
+            "BMCServiceDesk__FKUrgency__c":"'.$urgencyId.'"
         }';
 
         $logger->info("Try to update Ticket: ".$content);
@@ -250,7 +270,6 @@ sub update {
     my $serviceTicket   = shift;
     my $ticketNumber    = shift;
 
-    my $helpDesk = new HelpDesk();
     my $return = 0;
 
     # Get the Ticket details
@@ -330,25 +349,51 @@ sub getTicket {
     my $idTicket        = shift;
     my $idITSMTicket    = shift || '';
     
-    # my $tickets = $self->get($idTicket, $idITSMTicket);
+    my $itsmTicket;
+    if ($idITSMTicket eq '') {
+        $idITSMTicket = $self->getTicketNumber($idTicket);
+    }
 
+    my $url = $salesforceREST.'sobjects/BMCServiceDesk__Incident__c/'.$idITSMTicket;
 
+    my $ticketDetails = _API_GET( $url );
 
-    # if ($tickets == 0) {
-    #     return undef;
-    # }
-    # else {
-    #     # get the ticket
-    #     # return $tickets->valueof('//incidentlist');
-    #     return $tickets->valueof('//item');
-    # }
+    if ($ticketDetails ne 0) {
+        # Build itsmTicket as used in runLin.pl
+        $itsmTicket->{'incidentnumber'} = $idITSMTicket;
+        $itsmTicket->{'status'} = $ticketDetails->{'BMCServiceDesk__Status_ID__c'};
+    }
+
+    return $itsmTicket;
 }
 
 sub getTicketNumber {
     my $self            = shift;
     my $idTicket        = shift;
     
-    my $ticketNumber = '';
+    my $idITSMTicket = '';
+
+    # We cannot use HelpDesk here. So we do dbi on our own.
+    my $sth;
+    my $dbh = DBI->connect( $MoTMa::Application::dbDsn, $MoTMa::Application::dbUser, $MoTMa::Application::dbPassword, {
+        RaiseError => 1 }) or die $DBI::errstr;
+    my $query = "SELECT ticketnumber FROM tickets WHERE idtickets = ?;";
+
+    eval {
+        $sth = $dbh->prepare($query);
+        $sth->execute($idTicket);
+        $logger->trace("Query: ".$query." with: ".$idTicket);
+    };
+    if ($@) {
+        $sth->finish();
+        $logger->error("DB problem: ".Dumper($@));
+    }
+    else {
+        ($idITSMTicket) = $sth->fetchrow_array();
+        $sth->finish();
+    }
+
+    return $idITSMTicket;
 }
 
 #

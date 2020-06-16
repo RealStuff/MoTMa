@@ -102,13 +102,13 @@ sub getIncidentDetails {
 
     # incident
     if ($serviceTicket) {
-        $incidentDescription = substr "$service/$host - Service $ticketState",0,100;
+        $incidentDescription = substr "$host: $service: $ticketState",0,100;
     }
     else {
-        $incidentDescription = substr "$host - Host $ticketState",0,100;
+        $incidentDescription = substr "$host: $ticketState",0,100;
     }
     my $message          = $incidentDetail;
-    my $incidentPriority = "Medium";
+    my $incidentPriority = "MEDIUM";
 
     # Check if System is Produktion
     if ( $hostAlias =~ "m/^Produ|^produ/" ) {

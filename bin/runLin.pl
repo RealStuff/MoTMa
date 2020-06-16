@@ -137,7 +137,7 @@ sub main {
         # Check if stop of daemon is requested
         last if not $run;
         
-        # Get new tickets and create incident on ITSM System
+        # Get new tickets and create incident on Ticketing System
         $logger->info( "Check for \"NEW\" Tickets" );
         my $tickets = $helpDesk->getTicketsByTicketState('NEW');
         # Prepare alerting
@@ -260,8 +260,9 @@ sub main {
             foreach my $idticket (keys %$incidents) {
                 # Get Ticket
                 my $itsmTicket = $ticketSystem->getTicket($idticket, '');
+                $logger->debug("IncidentDetail: ".Dumper($itsmTicket));
                 if (defined($itsmTicket->{'incidentnumber'})) {
-                    if ($itsmTicket->{'status'} eq $MoTMa::Application::ticketClosedState) {
+                    if ( grep {$_ eq $itsmTicket->{'status'}} @MoTMa::Application::ticketClosedState) {
                         $helpDesk->updateTicket($idticket, $itsmTicket->{'incidentnumber'}, 'CLOSED');
                         $logger->trace("Found Remedy Ticket: ".$itsmTicket->{'incidentnumber'}." with status: ".
                             $itsmTicket->{'status'}." - WE close it...");
