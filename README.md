@@ -30,7 +30,7 @@ MoTMa was tested on GroundWork 7.2.2 with Nagios 4.3.4. Make sure your Monitorin
 
 ### Perl Dependencies
 
-MoTMa is implemented in Perl and uses differnt modules. Make sure you have installed them in your Perl installation or you can use the folder lib in MoTMa.
+MoTMa is implemented in Perl and uses different modules. Make sure you have installed them in your Perl installation or you can use the folder lib in MoTMa.
 * App::Daemon
 * Cache::File
 * Class::Inspector
@@ -66,10 +66,10 @@ A sample configuration file is located in the `etc` folder. Change it accordingl
 
 ```
 # Main config file
-vim motma/etc/motma.ini
+vi motma/etc/motma.ini
 
 # If you like to change the log behavior edit:
-vim motma/etc/motma.l4p
+vi motma/etc/motma.l4p
 ```
 ## GroundWork
 
