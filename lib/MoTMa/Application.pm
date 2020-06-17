@@ -70,6 +70,7 @@ our $dbUser = $cfg->val('database', 'user', "");
 our $dbPassword = $cfg->val('database', 'password', "");
 our $debug = $cfg->val('global', 'debug', '0');
 our $correlation = $cfg->val('global', 'correlation', 'host;service');
+our $cachePath = $basePath.$cfg->val('global', 'cachePath', 'tmp/');
 
 our $monitoringDriver = $cfg->val('global', 'monitoringdriver', 'NAGIOS');
 our $monitoringEnv = $cfg->val($monitoringDriver, 'env');

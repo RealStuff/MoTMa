@@ -1,54 +1,139 @@
-MoTMa
-=====
+# MoTMa - Monitoring Ticketing Manager
 
-Monitoring Ticketing Manager
+Interface between Monitoring and Service Desk Tools.
 
-Schnittstellen Manager zwischen Monitoring- und Service Desk Tools.
+MoTMa collects events from your monitoring system and will create incidents on your Service Desk Tool. Corresponding Events will be collected and aggregated. Status changes triggered from the monitoring system will update the incident in the Service Desk Tool.
 
-Funktionsbeschreibung: 
-- Events von Monitoring Tools entgegennehmen 
-- Event in lokaler DB zwischenspeichern 
-- Event Priorisierung (Critical -> Minor, Critical, Fatal) 
-- Service Desk Tool via Webservice - Schnittstelle aufrufen und Ticket generierenVerantwortung über Erreichbarkeit und Eventablieferung liegt bei MotMa 
-- Ticket Nummer entgegennehmen und Event in lokaler DB aktualisieren 
-- Ticket Nummer an Monitoring Tool weiterleiten (bei Bedarf) 
-- Acknowledge (setzen, löschen) an Monitoring Tool senden (bei Bedarf) 
-- Gleiche Events (wenn kein Ticket-Nr oder Ticket Status offen) zusammenfassen 
-- Ticket in Service Desk aktualisieren 
-- Regelmässig Ticket Status in Service Desk Tool abfragen und Event Eintrag nachführen 
-- Auswertung und Verwaltung der zentralen Events
+## Getting Started
 
-Bestehend: 
-- Zentrales Management Module 
-    - Als Service laufend 
-    - Lokale DB mit SQLight 
-    - Logik der Event - Behandlung 
-     Auswertung und Management Funktionen der Events 
-- Schnittstellen Module zu Monitoring Tools
-    - Event entgegennehmen 
-    - Update Monitoring Tool mit Ticket Nummer 
-    - Acknowledge im Monitoring Tool setzen / löschen 
-- Schnittstellen Module zu Service Desk Tools (Start mit Nagios) 
-    - Webservice abfragen für Ticket erstellen, Ticket abfragen, Ticket aktualisieren
+### Supported Monitoring Tools (Event generation)
+* GroundWork
+* Nagios
+* NoMa (Notification Manager)
 
-Unterstützte Monitoring Tools
-- GroundWork, OMD, Nagios
-- Service Center Operations Manager
-- WhatsUP Gold
+### Supported Service Desk Tools
+* BMC Remedy ITSM
+* BMC RemedyForce
 
-Weitere unterstützte Service Desk Tools
-- OTRS
-- Ky2Help 
-- BMC Service Desk Express
+### Missing Monitoring / Service Desk Tools
+If your tools are missing. Try to add your own and make a pull request or contact office@realstuff.ch.
 
-Projektstart: Mai 2014
+## System Requirements
+MoTMa was tested on GroundWork 7.2.2 with Nagios 4.3.4. Make sure your Monitoring Tool is equal. MoTMa is only running on Linux.
+* Monitoring Tool with Nagios
+* Perl Environment
+* PosgreSQL database server (except when running on sqlite)
 
-Projektplan 
-- Design und Entwicklung zentrales Module und DB Struktur 
-- Schnittstellen zu Nagios (Event ententgegen nehmen, Acknowlege setzt/löschen, Update Nagios mit Ticket Information) 
-- Schnittstelle zu BMC SDE via Webservice Schnittstelle 
-- Management und Auswertungen der Event Informationen 
-- Entwicklung weiterer Schnittstellen zu Monitoring Tools (SCOM, WhatsUp Gold etc.) 
-- Entwicklung weiterer Schnittstellen zu Service Desk Tools (ky2Help, OTRS etc.)
+### Perl Dependencies
+MoTMa is implemented in Perl and uses differnt modules. Make sure you have installed them in your Perl installation or you can use the folder lib in MoTMa.
+* App::Daemon
+* Cache::File
+* Class::Inspector
+* Email::Format
+* File::NFSLock
+* MIME::Lite
+* SOAP::Lite
+* Text::Template
+* JSON
+* HTTP::Request
+* LWP::UserAgent
+* Log::Log4Perl
 
-English translation will follow later
+### Database
+You can use sqlite or postgreSQL as your database backend for MoTMa. Depending on your needs you need:
+* sqlite3
+* postgreSQL 9.x
+
+## Installation
+To install just download this repo and extract it. Change to the folder you like to install MoTMa and clone the repo.
+
+```
+cd /opt/motma
+
+git clone https://github.com/RealStuff/MoTMa.git motma
+```
+
+## Configuration
+A sample configuration file is located in the `etc` folder. Change it accordingly. 
+
+```
+# Main config file
+vim motma/etc/motma.ini
+
+# If you like to change the log behavior edit:
+vim motma/etc/motma.l4p
+```
+## GroundWork
+If you are using GroundWork we recommend to install MoTMa in the `/usr/local/groundwork/` folder and to add the MoTMa init.d script to the `ctlscript.sh` in GroundWork. You will find an adapted `ctlsript.sh` in `resources/groundwork`.
+
+### GroundWork / Nagios
+When using Nagios to send notifications you have to add a notification command for MoTMa.
+
+For Hosts:
+```
+define command {
+        command_name                    host-notify-motma
+        command_line                    /usr/local/groundwork/motma/bin/sendEvent.pl -H $HOSTNAME$ -m "$HOSTOUTPUT$" -d $TIMET$ -S $HOSTSTATE$
+}
+```
+For Services:
+```
+define command {
+        command_name                    service-notify-itsm
+        command_line                    /usr/local/groundwork/motma/bin/sendEvent.pl -H $HOSTNAME$ -s $SERVICEDESC$ -m "$SERVICEOUTPUT$" -d $TIMET$ -S $SERVICESTATE$
+}
+```
+
+
+### GroundWork / NoMa
+When using NoMa in GroundWork you have to configure some files.
+
+#### Edit `NoMa.yml`
+
+1. add a command `sendmotma` in the `command:` section to `/usr/local/groundwork/noma/etc/NoMa.yml`:
+```
+  sendmotma: /usr/local/groundwork/noma/notifier/sendmotma.pl
+```
+2. add a method `sendmotma` in the `methods:` section:
+```
+  sendmotma:
+    message:
+      host:
+        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        subject: "NoMa: Host $host is $status"
+      service:
+      service:
+    message:
+      host:
+        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-
+gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: h
+ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        subject: "NoMa: Host $host is $status"
+      service:
+        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nAuthor: $authors\nComment: $comments\nService: $service\nHost: $host\nState: $stat
+us\n\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
+        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nService: $service\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $ho
+st_address\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
+        subject: "NoMa: Service $service on host $host is $status"
+    sendmail: /usr/local/groundwork/common/bin/sendEmail
+  sendmotma:
+    message:
+      host:
+        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-
+gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: h
+ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
+        subject: "NoMa: Host $host is $status"
+      service:
+        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nAuthor: $authors\nComment: $comments\nService: $service\nHost: $host\nState: $status\n\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
+        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nService: $service\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
+        subject: "NoMa: Service $service on host $host is $status"
+    sendmotma : /opt/motma/bin/NoMaEvent.pl
+```
+
+#### Configure NoMa in the UI
+
+1. Got to the NoMa UI and add a new Method. This method should be called `sendmotma` or as named in the previous step.
+2. Create a new Notification Rule with the method `sendmotma`or add the method `sendmotma` to an already created Notification rule.
