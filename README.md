@@ -154,3 +154,10 @@ ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDat
 
 1. Got to the NoMa UI and add a new Method. This method should be called `sendmotma` or as named in the previous step.
 2. Create a new Notification Rule with the method `sendmotma`or add the method `sendmotma` to an already created Notification rule.
+
+### GroundWork MoTMa specific paths
+
+If you installed MoTMa inside `/usr/local/groundwork/` you have to change the paths in these files:
+
+- `motma/init.d/motma`
+- `motma/etc/motma.l4p`
