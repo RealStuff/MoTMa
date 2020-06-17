@@ -7,24 +7,29 @@ MoTMa collects events from your monitoring system and will create incidents on y
 ## Getting Started
 
 ### Supported Monitoring Tools (Event generation)
+
 * GroundWork
 * Nagios
 * NoMa (Notification Manager)
 
 ### Supported Service Desk Tools
+
 * BMC Remedy ITSM
 * BMC RemedyForce
 
 ### Missing Monitoring / Service Desk Tools
+
 If your tools are missing. Try to add your own and make a pull request or contact office@realstuff.ch.
 
 ## System Requirements
+
 MoTMa was tested on GroundWork 7.2.2 with Nagios 4.3.4. Make sure your Monitoring Tool is equal. MoTMa is only running on Linux.
 * Monitoring Tool with Nagios
 * Perl Environment
 * PosgreSQL database server (except when running on sqlite)
 
 ### Perl Dependencies
+
 MoTMa is implemented in Perl and uses differnt modules. Make sure you have installed them in your Perl installation or you can use the folder lib in MoTMa.
 * App::Daemon
 * Cache::File
@@ -40,11 +45,13 @@ MoTMa is implemented in Perl and uses differnt modules. Make sure you have insta
 * Log::Log4Perl
 
 ### Database
+
 You can use sqlite or postgreSQL as your database backend for MoTMa. Depending on your needs you need:
 * sqlite3
 * postgreSQL 9.x
 
 ## Installation
+
 To install just download this repo and extract it. Change to the folder you like to install MoTMa and clone the repo.
 
 ```
@@ -54,6 +61,7 @@ git clone https://github.com/RealStuff/MoTMa.git motma
 ```
 
 ## Configuration
+
 A sample configuration file is located in the `etc` folder. Change it accordingly. 
 
 ```
@@ -64,19 +72,24 @@ vim motma/etc/motma.ini
 vim motma/etc/motma.l4p
 ```
 ## GroundWork
+
 If you are using GroundWork we recommend to install MoTMa in the `/usr/local/groundwork/` folder and to add the MoTMa init.d script to the `ctlscript.sh` in GroundWork. You will find an adapted `ctlsript.sh` in `resources/groundwork`.
 
 ### GroundWork / Nagios
+
 When using Nagios to send notifications you have to add a notification command for MoTMa.
 
 For Hosts:
+
 ```
 define command {
         command_name                    host-notify-motma
         command_line                    /usr/local/groundwork/motma/bin/sendEvent.pl -H $HOSTNAME$ -m "$HOSTOUTPUT$" -d $TIMET$ -S $HOSTSTATE$
 }
 ```
+
 For Services:
+
 ```
 define command {
         command_name                    service-notify-itsm
@@ -86,15 +99,19 @@ define command {
 
 
 ### GroundWork / NoMa
+
 When using NoMa in GroundWork you have to configure some files.
 
 #### Edit `NoMa.yml`
 
 1. add a command `sendmotma` in the `command:` section to `/usr/local/groundwork/noma/etc/NoMa.yml`:
+
 ```
   sendmotma: /usr/local/groundwork/noma/notifier/sendmotma.pl
 ```
+
 2. add a method `sendmotma` in the `methods:` section:
+
 ```
   sendmotma:
     message:
@@ -133,7 +150,7 @@ ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDat
     sendmotma : /opt/motma/bin/NoMaEvent.pl
 ```
 
-#### Configure NoMa in the UI
+#### Configure NoMa in the UI
 
 1. Got to the NoMa UI and add a new Method. This method should be called `sendmotma` or as named in the previous step.
 2. Create a new Notification Rule with the method `sendmotma`or add the method `sendmotma` to an already created Notification rule.

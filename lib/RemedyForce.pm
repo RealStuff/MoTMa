@@ -60,7 +60,7 @@ our ($header, $createProxy, $createUri, $createTpl, $createAction, $getProxy, $g
 my $logger = get_logger();
 my $alerter = new Alerting();
 my $monitoring = new Monitoring();
-my $cache = Cache::File->new( cache_root => $MoTMa::Applicaiton::cachePath );
+my $cache = Cache::File->new( cache_root => $MoTMa::Application::cachePath );
 
 # Preloaded methods go here.
 sub new {
