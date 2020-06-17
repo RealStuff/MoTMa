@@ -36,6 +36,8 @@ POSTGRESQL_SCRIPT=$INSTALLDIR/postgresql/scripts/ctl.sh
 APACHE_SCRIPT=$INSTALLDIR/apache2/scripts/ctl.sh
 NAGIOS_SCRIPT=$INSTALLDIR/nagios/scripts/ctl.sh
 SYSLOG_SCRIPT=$INSTALLDIR/common/scripts/ctl-syslog-ng.sh
+INFLUXDB_SCRIPT=$INSTALLDIR/influxdb/scripts/ctl.sh
+GRAFANA_SCRIPT=$INSTALLDIR/grafana/scripts/ctl.sh
 GWSERVICES_SCRIPT=$INSTALLDIR/core/services/gwservices
 SNMPTT_SCRIPT=$INSTALLDIR/common/scripts/ctl-snmptt.sh
 SNMPTRAPD_SCRIPT=$INSTALLDIR/common/scripts/ctl-snmptrapd.sh
@@ -44,39 +46,45 @@ NOMA_SCRIPT=$INSTALLDIR/noma/scripts/ctl.sh
 MOTMA_SCRIPT=$INSTALLDIR/motma/init.d/motma
 
 help() {
-        echo "usage: $0 help"
-        echo "       $0 (start|stop|restart|status)"
-        if test -x $POSTGRESQL_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) postgresql"
-        fi
-        if test -x $APACHE_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) apache"
-        fi
-        if test -x $NAGIOS_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) nagios"
-        fi
-        if test -x $SYSLOG_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) syslog-ng"
-        fi
-        if test -x $GWSERVICES_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) gwservices"
-        fi
-        if test -x $SNMPTT_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) snmptt"
-        fi
-        if test -x $SNMPTRAPD_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) snmptrapd"
-        fi
-        if test -x $NTOP_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) ntop"
-        fi
-        if test -x $NOMA_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) noma"
-        fi
-        if test -x $MOTMA_SCRIPT; then
-            echo "       $0 (start|stop|restart|status) motma"
-        fi
-        cat <<EOF
+    echo "usage: $0 help"
+    echo "       $0 (start|stop|restart|status)"
+    if test -x $POSTGRESQL_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) postgresql"
+    fi
+    if test -x $APACHE_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) apache"
+    fi
+    if test -x $NAGIOS_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) nagios"
+    fi
+    if test -x $SYSLOG_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) syslog-ng"
+    fi
+    if test -x $INFLUXDB_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) influxdb"
+    fi
+    if test -x $GRAFANA_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) grafana"
+    fi
+    if test -x $GWSERVICES_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) gwservices"
+    fi
+    if test -x $SNMPTT_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) snmptt"
+    fi
+    if test -x $SNMPTRAPD_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) snmptrapd"
+    fi
+    if test -x $NTOP_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) ntop"
+    fi
+    if test -x $NOMA_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) noma"
+    fi
+    if test -x $MOTMA_SCRIPT; then
+        echo "       $0 (start|stop|restart|status) motma"
+    fi
+    cat <<EOF
 
 help       - this screen
 start      - start the service(s)
@@ -127,6 +135,16 @@ elif [ "x$1" = "xstart" ]; then
             $NTOP_SCRIPT start
             NTOP_ERROR=$?
         fi
+    elif [ "x$2" = "xinfluxdb" ]; then
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT start
+            INFLUXDB_ERROR=$?
+        fi
+    elif [ "x$2" = "xgrafana" ]; then
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT start
+            GRAFANA_ERROR=$?
+        fi
     elif [ "x$2" = "xgwservices" ]; then
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT start
@@ -142,7 +160,6 @@ elif [ "x$1" = "xstart" ]; then
             $MOTMA_SCRIPT start
             MOTMA_ERROR=$?
         fi
-
     elif [ "x$2" = "x" ]; then
         if test -x $POSTGRESQL_SCRIPT; then
             $POSTGRESQL_SCRIPT start
@@ -173,6 +190,14 @@ elif [ "x$1" = "xstart" ]; then
             $NTOP_SCRIPT start
             NTOP_ERROR=$?
         fi
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT start
+            INFLUXDB_ERROR=$?
+        fi
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT start
+            GRAFANA_ERROR=$?
+        fi
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT start
             GWSERVICES_ERROR=$?
@@ -185,7 +210,6 @@ elif [ "x$1" = "xstart" ]; then
             $MOTMA_SCRIPT start
             MOTMA_ERROR=$?
         fi
-
     else
         ERROR=1
         echo "Invalid argument: $2"
@@ -246,7 +270,16 @@ elif [ "x$1" = "xstop" ]; then
             $GWSERVICES_SCRIPT stop
             GWSERVICES_ERROR=$?
         fi
-
+    elif [ "x$2" = "xgrafana" ]; then
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT stop
+            GRAFANA_ERROR=$?
+        fi
+    elif [ "x$2" = "xinfluxdb" ]; then
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT stop
+            INFLUXDB_ERROR=$?
+        fi
     elif [ "x$2" = "x" ]; then
         if test -x $NOMA_SCRIPT; then
             $NOMA_SCRIPT stop
@@ -259,6 +292,14 @@ elif [ "x$1" = "xstop" ]; then
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT stop
             GWSERVICES_ERROR=$?
+        fi
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT stop
+            GRAFANA_ERROR=$?
+        fi
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT stop
+            INFLUXDB_ERROR=$?
         fi
         if test -x $NTOP_SCRIPT; then
             $NTOP_SCRIPT stop
@@ -346,6 +387,20 @@ elif [ "x$1" = "xrestart" ]; then
             $SYSLOG_SCRIPT start
             SYSLOG_ERROR=$?
         fi
+    elif [ "x$2" = "xinfluxdb" ]; then
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT stop
+            sleep 2
+            $INFLUXDB_SCRIPT start
+            INFLUXDB_ERROR=$?
+        fi
+    elif [ "x$2" = "xgrafana" ]; then
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT stop
+            sleep 2
+            $GRAFANA_SCRIPT start
+            GRAFANA_ERROR=$?
+        fi
     elif [ "x$2" = "xgwservices" ]; then
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT stop
@@ -367,7 +422,6 @@ elif [ "x$1" = "xrestart" ]; then
             $MOTMA_SCRIPT start
             MOTMA_ERROR=$?
         fi
-
     elif [ "x$2" = "x" ]; then
         if test -x $NOMA_SCRIPT; then
             $NOMA_SCRIPT stop
@@ -380,6 +434,14 @@ elif [ "x$1" = "xrestart" ]; then
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT stop
             GWSERVICES_ERROR=$?
+        fi
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT stop
+            GRAFANA_ERROR=$?
+        fi
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT stop
+            INFLUXDB_ERROR=$?
         fi
         if test -x $SYSLOG_SCRIPT; then
             $SYSLOG_SCRIPT stop
@@ -439,6 +501,14 @@ elif [ "x$1" = "xrestart" ]; then
             $NTOP_SCRIPT start
             NTOP_ERROR=$?
         fi
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT start
+            INFLUXDB_ERROR=$?
+        fi
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT start
+            GRAFANA_ERROR=$?
+        fi
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT start
             GWSERVICES_ERROR=$?
@@ -488,6 +558,14 @@ elif [ "x$1" = "xstatus" ]; then
         if test -x $NTOP_SCRIPT; then
             $NTOP_SCRIPT status
         fi
+    elif [ "x$2" = "xinfluxdb" ]; then
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT status
+        fi
+    elif [ "x$2" = "xgrafana" ]; then
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT status
+        fi
     elif [ "x$2" = "xgwservices" ]; then
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT status
@@ -500,7 +578,6 @@ elif [ "x$1" = "xstatus" ]; then
         if test -x $MOTMA_SCRIPT; then
             $MOTMA_SCRIPT status
         fi
-
     elif [ "x$2" = "x" ]; then
         if test -x $NOMA_SCRIPT; then
             $NOMA_SCRIPT status
@@ -510,6 +587,12 @@ elif [ "x$1" = "xstatus" ]; then
         fi
         if test -x $GWSERVICES_SCRIPT; then
             $GWSERVICES_SCRIPT status
+        fi
+        if test -x $GRAFANA_SCRIPT; then
+            $GRAFANA_SCRIPT status
+        fi
+        if test -x $INFLUXDB_SCRIPT; then
+            $INFLUXDB_SCRIPT status
         fi
         if test -x $SYSLOG_SCRIPT; then
             $SYSLOG_SCRIPT status
@@ -544,7 +627,7 @@ else
 fi
 
 # Checking for errors
-for e in $APACHE_ERROR $POSTGRESQL_ERROR $NAGIOS_ERROR $SYSLOG_ERROR $SNMPTT_ERROR $SNMPTRAPD_ERROR $NTOP_ERROR $GWSERVICES_ERROR $NOMA_ERROR $MOTMA_ERROR; do
+for e in $APACHE_ERROR $POSTGRESQL_ERROR $NAGIOS_ERROR $SYSLOG_ERROR $SNMPTT_ERROR $SNMPTRAPD_ERROR $NTOP_ERROR $INFLUXDB_ERROR $GRAFANA_ERROR $GWSERVICES_ERROR $NOMA_ERROR $MOTMA_ERROR; do
     if [ $e -gt 0 ]; then
         ERROR=$e
     fi
