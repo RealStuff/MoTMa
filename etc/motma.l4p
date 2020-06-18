@@ -23,7 +23,7 @@
 #   "%d %p> %F{1}:%L %M - %m%n"
     
 # There are six predefined log levels: FATAL, ERROR, WARN, INFO, DEBUG, and TRACE.
-# FATAL will only show fatal messages. TRACE will show all messages
+# FATAL will only show fatal messages. TRACE will show all messages
 log4perl.rootLogger                                 = TRACE, Screen, Logfile
 
 log4perl.appender.Logfile                           = Log::Log4perl::Appender::File
