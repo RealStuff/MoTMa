@@ -41,7 +41,7 @@ sub new {
     my $self = {};
 
     $dbh = DBI->connect( $MoTMa::Application::dbDsn, $MoTMa::Application::dbUser, $MoTMa::Application::dbPassword, {
-        RaiseError => 1 }) or die $DBI::errstr;
+        RaiseError => 1 }) or $logger->error("DB Connection failed"); die $DBI::errstr;
                       
     bless $self, $class;
     return $self;
@@ -322,7 +322,7 @@ sub insertTicket {
         $sth = $dbh->prepare($insert);
         # print "TRACE: $ticketnumber, $ticketStatus, $created, $modified\n";
         $sth->execute($ticketnumber, $ticketStatus, $created, $modified);
-        # GIBT LEIDER NICH IMMER KORREKTE WERTE
+        # GIBT LEIDER NICH IMMER KORREKTE WERTE
         $lastId = $dbh->last_insert_id(undef, undef, 'tickets', 'idtickets');
         # PostgreSQL: SELECT currval(pg_get_serial_sequence('tickets','idtickets'));
         #$lastId2 = $dbh->selectrow_array("SELECT currval(pg_get_serial_sequence('tickets','idtickets'));");

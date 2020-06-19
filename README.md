@@ -51,7 +51,7 @@ You can use sqlite or postgreSQL as your database backend for MoTMa. Depending o
 * postgreSQL 9.x
 
 
-#### Configuring Database
+#### Configuring Database
 
 When using sqlite you are already ok. The db file will be located in `data/data.db`.
 
@@ -93,7 +93,7 @@ git clone https://github.com/RealStuff/MoTMa.git motma
 A sample configuration file is located in the `etc` folder. Change it accordingly. 
 
 ```
-# Main config file
+# Main config file
 vi motma/etc/motma.ini
 
 # If you like to change the log behavior edit:
@@ -129,7 +129,7 @@ define command {
 
 When using NoMa in GroundWork you have to configure some files.
 
-#### Edit `NoMa.yml`
+#### Edit `NoMa.yml`
 
 1. add a command `sendmotma` in the `command:` section to `/usr/local/groundwork/noma/etc/NoMa.yml`:
 

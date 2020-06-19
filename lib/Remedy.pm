@@ -400,7 +400,7 @@ There was an error while connecting to ITSM/Remedy ".$@);
         my $faultstring = $result->faultstring;
         my $faultdetail = $result->faultdetail;
         
-        # API ended with error - Look at $faultstring
+        # API ended with error - Look at $faultstring
         $logger->error("ARS Remedy - SOAP ERROR - Could not call $action!
 SOAP FAULTCODE: $faultcode
 SOAP FAULTSTRING: $faultstring

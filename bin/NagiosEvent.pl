@@ -75,7 +75,7 @@ sub main {
     
     
     
-    # Log data to file:
+    # Log data to file:
     logfile("Host: $host, Service: $service, Category: $category, Parameters: $parameters, Priority: $priority, "
         ."Message: $message, Status: $status, Submitdate: $submitdate") if $debug;
 	
@@ -145,7 +145,7 @@ sub checkValues() {
 sub logfile() {
     my $logMessage = shift;
     
-    my $filename = $basePath.'var/log/notifications.log';
+    my $filename = $MoTMa::Application::basePath.'var/log/notifications.log';
     open(my $fh, '>>', $filename) or die "Could not open file '$filename' $!";
     print $fh "$logMessage\n";
     close $fh;

@@ -129,7 +129,7 @@ sub create {
 
     my $datestring = strftime "%F %H:%M:%S", localtime;
 
-    # Get the Ticket details
+    # Get the Ticket details
     my ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName,$companyName,
         $worklogDescription, $worklogDetail) = $monitoring->getIncidentDetails($ticket, $serviceTicket);
 
@@ -138,7 +138,7 @@ sub create {
     
     # The Create incident Remedyforce API accepts only Description, OpenDateTime, DueDateTime, and ClientId
     # fields while creating an incident. To populate fields such as template or custom fields for an incident, use 
-    # Salesforce platform REST API. For more information about Salesforce platform REST API, see the Salesforce
+    # Salesforce platform REST API. For more information about Salesforce platform REST API, see the Salesforce
     # Help on: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_create.htm
     my $content = '{
         "Description": "'.$incidentDescription.'",
@@ -161,7 +161,7 @@ sub create {
     if ($response != 0) {
         # We have to update the Incident with detailed Infos.
 
-        # Get the Host ID
+        # Get the Host ID
         my $hostId = $cache->get( $ticket->{'host'}.'_ID' );
         if (not defined $hostId) {
             $logger->info("No HostID available. Try to get new one for: ".$ticket->{'host'});
@@ -211,9 +211,9 @@ sub create {
         }
 
         # Update the ticket
-        # In the moment we do net set the shortDescription. 
+        # In the moment we do net set the shortDescription. 
         # "BMCServiceDesk__shortDescription__c": "'.$incidentDetail.'",
-        # "Tier__c":"Important",
+        # "Tier__c":"Important",
         my $content = '{
             "BMCServiceDesk__incidentDescription__c": "'.$incidentDetail.'",
             "BMCServiceDesk__FKBusinessService__c": "'.$businessServiceId.'",
@@ -269,7 +269,7 @@ sub update {
 
     my $return = 0;
 
-    # Get the Ticket details
+    # Get the Ticket details
     my ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName,$companyName,
         $worklogDescription, $worklogDetail) = $monitoring->getIncidentDetails($ticket, $serviceTicket);
 
@@ -443,7 +443,7 @@ There was an error while connecting to RemedyForce ".$@);
             my $faultstring = $som->faultstring;
             my $faultdetail = $som->faultdetail;
             
-            # API ended with error - Look at $faultstring
+            # API ended with error - Look at $faultstring
             $logger->error("RemedyForce - SOAP ERROR - Could not call login!
 SOAP FAULTCODE: $faultcode
 SOAP FAULTSTRING: $faultstring
@@ -599,7 +599,7 @@ sub _API_POST {
 
     $logger->trace("Url: ".$url);
 
-    # Prepare the request
+    # Prepare the request
     my $r = HTTP::Request->new('POST', $url, $header);
 
     # add content to the request
@@ -630,7 +630,7 @@ sub _API_PATCH {
         'Content-Type' => 'application/json',
         'Accept' => '*/*'];
 
-    # Prepare the request
+    # Prepare the request
     my $r = HTTP::Request->new('PATCH', $url, $header);
 
     # add content to the request

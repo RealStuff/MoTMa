@@ -205,7 +205,7 @@ sub main {
 
             if ($ticketNumber eq '') {
                 $logger->warn("!!!!!!!! ITSM TICKET $idticket not found !!!!!!!!!".Dumper($updates->{$idticket}));
-                # try in next round
+                # try in next round
             }
             else {
                 # Close Ticket on ITSM Ticketing if in Good state
@@ -213,12 +213,12 @@ sub main {
                     $logger->info("ITSM Ticket = $ticketNumber idticket = $idticket serviceTicket = $serviceTicket CLOSED");
 
                     # Try to close ticket
-                    # When successfuly update helpdesk to CLOSED
+                    # When successfuly update helpdesk to CLOSED
                     if ($ticketSystem->update(\%eventDetail, $idticket, 1, $serviceTicket, $ticketNumber)) {
                         $helpDesk->updateTicket($idticket, $ticketNumber, 'CLOSED');
                     }
                 }
-                # Only update Ticket
+                # Only update Ticket
                 elsif ($MoTMa::Application::updateTicket) {
                     $helpDesk->updateTicket($idticket, $ticketNumber, 'WORKING');
                     $ticketSystem->update(\%eventDetail, $idticket, 0, $serviceTicket, $ticketNumber);
@@ -273,11 +273,11 @@ sub main {
                 }
             }
 
-            # Reset Working Loop to 0
+            # Reset Working Loop to 0
             $workingLoop = 0;
         }
 
-        # wee want run every
+        # we want run every
         sleep $MoTMa::Application::loopInterval if $run;
     }
 
