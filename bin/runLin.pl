@@ -69,8 +69,8 @@ $SIG{INT} = sub { $logger->warn("Caught SIGINT:  exiting gracefully"); $run = 0;
 main();
 
 sub main {
-    $App::Daemon::logfile    = "/opt/motma/var/log/motma.log";
-    $App::Daemon::pidfile    = "/opt/motma/var/run/motma.pid";
+    $App::Daemon::logfile    = $MoTMa::Application::basePath."var/log/motma.log";
+    $App::Daemon::pidfile    = $MoTMa::Application::basePath."var/run/motma.pid";
     $App::Daemon::kill_retries = 30;
     $App::Daemon::l4p_conf   = $MoTMa::Application::basePath."etc/motma.l4p";
     $App::Daemon::background = 1;

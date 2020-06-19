@@ -50,6 +50,34 @@ You can use sqlite or postgreSQL as your database backend for MoTMa. Depending o
 * sqlite3
 * postgreSQL 9.x
 
+
+#### Configuring Database
+
+When using sqlite you are already ok. The db file will be located in `data/data.db`.
+
+When using PostgreSQL you have to do some more steps.
+
+##### User
+
+```
+CREATE USER helpdesk WITH PASSWORD 'helpdesk';
+```
+
+##### Database
+
+Create database and change owner:
+
+```
+CREATE DATABASE helpdesk;
+ALTER DATABASE helpdesk OWNER TO helpdesk;
+```
+
+Create tables by importing SQL from `data/postgresql/database.sql`:
+
+```
+psql -f data/postgresql/database.sql -d helpdesk
+```
+
 ## Installation
 
 To install just download this repo and extract it. Change to the folder you like to install MoTMa and clone the repo.
@@ -97,7 +125,6 @@ define command {
 }
 ```
 
-
 ### GroundWork / NoMa
 
 When using NoMa in GroundWork you have to configure some files.
@@ -107,7 +134,7 @@ When using NoMa in GroundWork you have to configure some files.
 1. add a command `sendmotma` in the `command:` section to `/usr/local/groundwork/noma/etc/NoMa.yml`:
 
 ```
-  sendmotma: /usr/local/groundwork/noma/notifier/sendmotma.pl
+  sendmotma: /usr/local/groundwork/noma/notifier/sendMotma.pl
 ```
 
 2. add a method `sendmotma` in the `methods:` section:
@@ -118,30 +145,6 @@ When using NoMa in GroundWork you have to configure some files.
       host:
         ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
         message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
-        subject: "NoMa: Host $host is $status"
-      service:
-      service:
-    message:
-      host:
-        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-
-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
-        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: h
-ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
-        subject: "NoMa: Host $host is $status"
-      service:
-        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nAuthor: $authors\nComment: $comments\nService: $service\nHost: $host\nState: $stat
-us\n\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
-        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nService: $service\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $ho
-st_address\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
-        subject: "NoMa: Service $service on host $host is $status"
-    sendmail: /usr/local/groundwork/common/bin/sendEmail
-  sendmotma:
-    message:
-      host:
-        ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nAuthor: $authors\nComment: $comments\nState: $status\nLink: http://t-
-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
-        message: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nHost: $host\nHost Alias: $host_alias\nState: $status\nAddress: $host_address\nLink: h
-ttp://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host\nInfo: $output\n\nDate/Time: $datetime"
         subject: "NoMa: Host $host is $status"
       service:
         ackmessage: "***** NoMa *****\n\nID: $incident_id\nNotification Type: $notification_type\nAuthor: $authors\nComment: $comments\nService: $service\nHost: $host\nState: $status\n\nLink: http://t-gw-motma-awe/portal-statusviewer/urlmap?host=$host&service=$service\nInfo: $output\n\nDate/Time: $datetime"
@@ -161,5 +164,9 @@ If you installed MoTMa inside `/usr/local/groundwork/` you have to change the pa
 
 - `motma/init.d/motma`
 - `motma/etc/motma.l4p`
-- `noma/notifier/sendmotma.pl`
+- `noma/notifier/sendMotma.pl`
 - `noma/etc/NoMa.yml`
+
+Nicht mehr nötig????
+- `motma/bin/runLin.pl`
+- `motma/bin/NoMaEvent.pl`

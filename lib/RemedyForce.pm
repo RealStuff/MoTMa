@@ -125,7 +125,6 @@ sub create {
     my $idTicket        = shift;
     my $serviceTicket   = shift;
 
-    my $createdTicket;
     use POSIX qw(strftime);
 
     my $datestring = strftime "%F %H:%M:%S", localtime;
@@ -158,8 +157,6 @@ sub create {
     $logger->info("Try to create Incident with content: ".$content);
 
     my $response = _API_POST($remedyforceREST."Incident", $content);
-
-    $logger->info(Dumper($createdTicket));
 
     if ($response != 0) {
         # We have to update the Incident with detailed Infos.

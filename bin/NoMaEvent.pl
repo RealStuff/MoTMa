@@ -145,7 +145,7 @@ sub checkValues() {
 sub logfile() {
     my $logMessage = shift;
     
-    my $filename = '/opt/motma/var/log/notifications.log';
+    my $filename = $basePath.'var/log/notifications.log';
     open(my $fh, '>>', $filename) or die "Could not open file '$filename' $!";
     print $fh "$logMessage\n";
     close $fh;
