@@ -40,9 +40,11 @@ sub new {
     my $class = shift;
     my $self = {};
 
+    $logger->info("Try to connect to Database...");
     $dbh = DBI->connect( $MoTMa::Application::dbDsn, $MoTMa::Application::dbUser, $MoTMa::Application::dbPassword, {
-        RaiseError => 1 }) or $logger->error("DB Connection failed"); die $DBI::errstr;
-                      
+        RaiseError => 1 }) or die $DBI::errstr;
+    $logger->info("... connect to Database OK.");
+
     bless $self, $class;
     return $self;
 }
