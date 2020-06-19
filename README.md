@@ -166,7 +166,3 @@ If you installed MoTMa inside `/usr/local/groundwork/` you have to change the pa
 - `motma/etc/motma.l4p`
 - `noma/notifier/sendMotma.pl`
 - `noma/etc/NoMa.yml`
-
-Nicht mehr nötig????
-- `motma/bin/runLin.pl`
-- `motma/bin/NoMaEvent.pl`
