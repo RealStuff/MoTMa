@@ -171,6 +171,18 @@ sub create {
             $cache->set( $ticket->{'host'}.'_ID', $hostId );
         }
 
+        # Get the Tier of the Host
+        my $hostTier = $cache->get( $ticket->{'host'}.'_Tier');
+        if (not defined $hostTier) {
+            $logger->info("No Tier available for this hostId. Try to get new one or HostId: ".$hostId);
+            my $hostDetail = $self->getSalesForceElementDetail($hostId, 'BMCServiceDesk__BMC_BaseElement__c');
+
+            if (defined $hostDetail->{'BMCRF_Tier__c'}) {
+                $hostTier = $hostDetail->{'BMCRF_Tier__c'};
+                $cache->set($ticket->{'host'}.'_Tier');
+            }
+        }
+
         # get BusinessService ID
         my $businessServiceId = $cache->get($salesforceBusinessService.'_FKBusinessService');
         if (not defined $businessServiceId) {
@@ -213,12 +225,13 @@ sub create {
         # Update the ticket
         # In the moment we do net set the shortDescription. 
         # "BMCServiceDesk__shortDescription__c": "'.$incidentDetail.'",
-        # "Tier__c":"Important",
         my $content = '{
             "BMCServiceDesk__incidentDescription__c": "'.$incidentDetail.'",
             "BMCServiceDesk__FKBusinessService__c": "'.$businessServiceId.'",
             "BMCServiceDesk__FKServiceOffering__c": "'.$serviceOfferingId.'",
             "BMCServiceDesk__FKBMC_BaseElement__c": "'.$hostId.'",
+            "Tier__c":"'.$hostTier.'",
+            "BMCServiceDesk__contactType__c": "Event",
             "BMCServiceDesk__FKImpact__c": "'.$impactId.'",
             "BMCServiceDesk__FKUrgency__c":"'.$urgencyId.'"
         }';
@@ -467,14 +480,28 @@ SOAP FAULTDETAIL: ".Dumper($faultdetail)."
         $bearerToken = $som->result->{'sessionId'};
         my $sessionSecondsValid = $som->result->{'userInfo'}->{'sessionSecondsValid'};
         $cache->set( 'BearerToken', $bearerToken, ($sessionSecondsValid-60).' s' );
-        $logger->debug("Got Bearer token: ".$bearerToken.". Saved into Cache for ".($sessionSecondsValid-60)." Seconds!")
+        $logger->debug("Got Bearer token: ".$bearerToken.". Saved into Cache for ".($sessionSecondsValid-60)." Seconds!");
+
+        # Make Bearer Token available for application
+        $RemedyForce::bearerToken = $bearerToken;
     }
     else {
         $logger->info("BearerToken already available!");
-    }
 
-    # Make Bearer Token available for application
-    $RemedyForce::bearerToken = $bearerToken;
+        # Make Bearer Token available for application
+        $RemedyForce::bearerToken = $bearerToken;
+
+        # Check if the token is valid
+        my $remedyForceVersion = version();
+        if ($remedyForceVersion ne 0) {
+            $logger->info("RemedyForce ".$remedyForceVersion->{'Result'});
+        }
+        else {
+            # Try to get version again - to make sure we could login
+            my $remedyForceVersion = version();
+            $logger->info("RemedyForce ".$remedyForceVersion->{'Result'});
+        }
+    }
 
     return 1;
 }
@@ -484,7 +511,7 @@ sub version {
 
     my $url = $remedyforceREST.'ServiceUtil/Version';
 
-    _API_GET($url);
+    return _API_GET($url);
    
 }
 
@@ -584,6 +611,11 @@ sub _API_GET {
     }
     else {
         $logger->error("GET Request not successfull to ".$url.". Response Status: ".$res->status_line);
+        # If we have 401 HTTP Response Code - retry to login
+        if ($res->status_line eq '401 Unauthorized') {
+            $cache->remove( 'BearerToken' );
+            login();
+        }
         return 0;
     }
 }
@@ -617,6 +649,11 @@ sub _API_POST {
     }
     else {
         $logger->error("POST Request not successfull to ".$url.". Response Status: ".$res->status_line);
+        # If we have 401 HTTP Response Code - retry to login
+        if ($res->status_line eq '401 Unauthorized') {
+            $cache->remove( 'BearerToken' );
+            login();
+        }
         return 0;
     }
 }
@@ -650,7 +687,11 @@ sub _API_PATCH {
         return 1;
     }
     else {
-        $logger->error("PATCH Request not successfull to ".$url.". Response Status: ".$res->status_line);
+        $logger->error("PATCH Request not successfull to ".$url.". Response Status: ".$res->status_line);# If we have 401 HTTP Response Code - retry to login
+        if ($res->status_line eq '401 Unauthorized') {
+            $cache->remove( 'BearerToken' );
+            login();
+        }
         return 0;
     }
 }

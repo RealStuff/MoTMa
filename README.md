@@ -59,20 +59,22 @@ When using PostgreSQL you have to do some more steps.
 
 ##### User
 
+SQL command to create the user on PostgreSQL:
+
 ```
 CREATE USER helpdesk WITH PASSWORD 'helpdesk';
 ```
 
 ##### Database
 
-Create database and change owner:
+SQL commands to create database and change owner:
 
 ```
 CREATE DATABASE helpdesk;
 ALTER DATABASE helpdesk OWNER TO helpdesk;
 ```
 
-Create tables by importing SQL from `data/postgresql/database.sql`:
+Create tables by importing SQL from `data/postgresql/database.sql` with command `psql`:
 
 ```
 psql -f data/postgresql/database.sql -d helpdesk

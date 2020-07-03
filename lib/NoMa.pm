@@ -135,8 +135,7 @@ Host:     $host
 Address:  $hostAddress
 State:    $ticketState
 
-Info->
-$ticketOutput
+Info:     $ticketOutput
 
 $ticketLongOutput
 
