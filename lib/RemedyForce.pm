@@ -60,7 +60,7 @@ our ($header, $createProxy, $createUri, $createTpl, $createAction, $getProxy, $g
 my $logger = get_logger();
 my $alerter = new Alerting();
 my $monitoring = new Monitoring();
-my $cache = Cache::File->new( cache_root => $MoTMa::Application::cachePath );
+my $cache = Cache::File->new( cache_root => $MoTMa::Application::cachePath, default_expires => '28800 sec'  ); # Cache duration 8h
 
 # Preloaded methods go here.
 sub new {
@@ -130,7 +130,7 @@ sub create {
     my $datestring = strftime "%F %H:%M:%S", localtime;
 
     # Get the Ticket details
-    my ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName,$companyName,
+    my ($incidentPriority, $incidentDescription, $incidentDetail, $customerName, $productName, $companyName,
         $worklogDescription, $worklogDetail) = $monitoring->getIncidentDetails($ticket, $serviceTicket);
 
     # Replace newlines by \n in String. This is because JSON can not handle newlines.
@@ -153,12 +153,20 @@ sub create {
     #     "ClientId":  "0050Y000003hI9HQAU",
     #     "IncidentSource": "Source"
     # }
-    
-    $logger->info("Try to create Incident with content: ".$content);
 
     my $response = _API_POST($remedyforceREST."Incident", $content);
 
     if ($response != 0) {
+        # check if we found an error
+        if ($response->{'ErrorMessage'} ne "") {
+            $logger->error("Could not create Incident: ".$response->{'ErrorMessage'}.
+                "\n  Ticketdetails: ".Dumper($ticket).
+                "\n  Ticket Content: ".$content.
+                "\n  Sending to URL: ".$remedyforceREST."Incident");
+    
+            return 0;
+        }
+
         # We have to update the Incident with detailed Infos.
 
         # Get the Host ID
@@ -174,12 +182,15 @@ sub create {
         # Get the Tier of the Host
         my $hostTier = $cache->get( $ticket->{'host'}.'_Tier');
         if (not defined $hostTier) {
-            $logger->info("No Tier available for this hostId. Try to get new one or HostId: ".$hostId);
+            $logger->info("No Tier available for this hostId. Try to get new one for HostId: ".$hostId);
             my $hostDetail = $self->getSalesForceElementDetail($hostId, 'BMCServiceDesk__BMC_BaseElement__c');
 
-            if (defined $hostDetail->{'BMCRF_Tier__c'}) {
-                $hostTier = $hostDetail->{'BMCRF_Tier__c'};
+            if (defined $hostDetail->{'Tier__c'}) { # on old sandbox: BMCRF_Tier__c
+                $hostTier = $hostDetail->{'Tier__c'};
                 $cache->set($ticket->{'host'}.'_Tier');
+            }
+            else {
+                $logger->error("Tier not found for ".$ticket->{'host'}.". Searched for 'Tier__c'. HostDetail is: ".Dumper($hostDetail));
             }
         }
 

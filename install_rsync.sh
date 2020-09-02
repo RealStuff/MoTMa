@@ -20,7 +20,7 @@ else
     rsync -a --delete -e ssh data root@$1:$installDir
     rsync -a --delete -e ssh lib root@$1:$installDir
     rsync -a --delete -e ssh var root@$1:$installDir
-    rsync -a --delete -e ssh Makefile.PL root@$1:$installDir
+    # rsync -a --delete -e ssh Makefile.PL root@$1:$installDir
 
     # Install and extract needed files on the GW Server
     ssh root@$1 /bin/bash << EOF
